@@ -137,8 +137,7 @@
         // 1. СЦЕНА, КАМЕРА, РЕНДЕРЕР
         // --------------------------------------------------------------
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x1a1a2e);
-        scene.fog = new THREE.Fog(0x1a1a2e, 20, 50); // Туман для атмосферы
+        scene.background = new THREE.Color(0x0a0a1a);
 
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
         camera.position.set(0, 5, 8);
@@ -155,57 +154,38 @@
         // --------------------------------------------------------------
         // 2. ОСВЕЩЕНИЕ
         // --------------------------------------------------------------
-        const ambientLight = new THREE.AmbientLight(0x404060, 0.5);
+        const ambientLight = new THREE.AmbientLight(0x404060, 0.6);
         scene.add(ambientLight);
 
         const dirLight = new THREE.DirectionalLight(0xffeedd, 2.5);
-        dirLight.position.set(10, 15, 10);
+        dirLight.position.set(6, 10, 6);
         dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 4096;
-        dirLight.shadow.mapSize.height = 4096;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.bias = -0.001;
         dirLight.shadow.camera.near = 0.1;
-        dirLight.shadow.camera.far = 60;
-        dirLight.shadow.camera.left = -30;
-        dirLight.shadow.camera.right = 30;
-        dirLight.shadow.camera.top = 30;
-        dirLight.shadow.camera.bottom = -30;
+        dirLight.shadow.camera.far = 30;
+        dirLight.shadow.camera.left = -10;
+        dirLight.shadow.camera.right = 10;
+        dirLight.shadow.camera.top = 10;
+        dirLight.shadow.camera.bottom = -10;
         scene.add(dirLight);
 
-        const hemiLight = new THREE.HemisphereLight(0x87ceeb, 0x362d1e, 0.6);
-        scene.add(hemiLight);
+        const backLight = new THREE.DirectionalLight(0x4488ff, 0.6);
+        backLight.position.set(-4, 2, -6);
+        scene.add(backLight);
+
+        const fillLight = new THREE.PointLight(0xff6633, 0.4, 15);
+        fillLight.position.set(0, -1, 3);
+        scene.add(fillLight);
 
         // --------------------------------------------------------------
-        // 3. ПОЛ (большое поле)
+        // 3. ПОЛ (как в предыдущей версии)
         // --------------------------------------------------------------
-        // Текстура травы (создаём procedural)
-        const canvas = document.createElement('canvas');
-        canvas.width = 512;
-        canvas.height = 512;
-        const ctx = canvas.getContext('2d');
-        
-        // Зелёный фон
-        ctx.fillStyle = '#2d5a1e';
-        ctx.fillRect(0, 0, 512, 512);
-        
-        // Трава (случайные точки)
-        for (let i = 0; i < 20000; i++) {
-            const x = Math.random() * 512;
-            const y = Math.random() * 512;
-            const size = 1 + Math.random() * 2;
-            const green = 80 + Math.random() * 80;
-            ctx.fillStyle = `rgb(40, ${green}, 20)`;
-            ctx.fillRect(x, y, size, size);
-        }
-        
-        const texture = new THREE.CanvasTexture(canvas);
-        texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-        texture.repeat.set(20, 20);
-
-        const groundGeo = new THREE.PlaneGeometry(60, 60);
-        const groundMat = new THREE.MeshStandardMaterial({
-            map: texture,
-            roughness: 0.9,
-            metalness: 0.0,
+        const groundGeo = new THREE.PlaneGeometry(20, 20);
+        const groundMat = new THREE.ShadowMaterial({
+            opacity: 0.3,
+            color: 0x000000,
         });
         const ground = new THREE.Mesh(groundGeo, groundMat);
         ground.rotation.x = -Math.PI / 2;
@@ -213,10 +193,21 @@
         ground.receiveShadow = true;
         scene.add(ground);
 
-        // Сетка для ориентации
-        const gridHelper = new THREE.GridHelper(40, 40, 0x88ff88, 0x44aa44);
-        gridHelper.position.y = -0.48;
+        const gridHelper = new THREE.GridHelper(12, 20, 0x6666aa, 0x333355);
+        gridHelper.position.y = -0.49;
         scene.add(gridHelper);
+
+        const markerGeo = new THREE.RingGeometry(0.4, 0.6, 32);
+        const markerMat = new THREE.MeshBasicMaterial({
+            color: 0xff6b35,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.3,
+        });
+        const marker = new THREE.Mesh(markerGeo, markerMat);
+        marker.rotation.x = -Math.PI / 2;
+        marker.position.y = -0.48;
+        scene.add(marker);
 
         // --------------------------------------------------------------
         // 4. ЗАГРУЗКА МОДЕЛИ МОСКВИЧА
@@ -227,7 +218,7 @@
         let car = null;
         let carLoaded = false;
 
-        // Координаты спавна
+        // Координаты спавна (как вы сказали)
         const SPAWN_POS = new THREE.Vector3(-47.14, 0.32, -40.72);
 
         loader.load(
@@ -260,11 +251,6 @@
                     if (child.isMesh) {
                         child.castShadow = true;
                         child.receiveShadow = true;
-                        // Добавляем немного блеска кузову
-                        if (child.material) {
-                            child.material.roughness = 0.3;
-                            child.material.metalness = 0.6;
-                        }
                     }
                 });
 
@@ -296,11 +282,10 @@
         const carState = {
             position: new THREE.Vector3(SPAWN_POS.x, SPAWN_POS.y, SPAWN_POS.z),
             velocity: new THREE.Vector3(0, 0, 0),
-            rotation: 0, // угол поворота в радианах
+            rotation: 0,
             speed: 0,
         };
 
-        // Параметры управления
         const ENGINE_FORCE = 0.15;
         const BRAKE_FORCE = 0.08;
         const MAX_SPEED = 0.8;
@@ -345,62 +330,47 @@
 
             const { position, velocity, rotation } = carState;
 
-            // --- Управление ---
             let acceleration = 0;
             let turn = 0;
 
-            // Газ
             if (keys.w) {
                 acceleration = ENGINE_FORCE;
             }
-            // Тормоз/задний ход
             if (keys.s) {
                 if (Math.abs(velocity.length()) < 0.05) {
-                    // Если почти стоим - едем назад
                     acceleration = -ENGINE_FORCE * 0.6;
                 } else {
                     acceleration = -BRAKE_FORCE;
                 }
             }
 
-            // Руль
             if (keys.a) turn = TURN_SPEED;
             if (keys.d) turn = -TURN_SPEED;
 
-            // Ручник (дрифт)
             const isDrifting = keys.space;
             const friction = isDrifting ? DRIFT_FRICTION : FRICTION;
 
-            // --- Применяем физику ---
-            // Поворачиваем только если едем
             if (Math.abs(velocity.length()) > 0.01) {
                 carState.rotation += turn * (velocity.length() / 0.5);
             }
 
-            // Двигаем вперёд/назад относительно поворота
             const forward = new THREE.Vector3(-Math.sin(carState.rotation), 0, -Math.cos(carState.rotation));
-            
-            // Добавляем ускорение
             velocity.add(forward.multiplyScalar(acceleration));
 
-            // Ограничиваем скорость
             if (velocity.length() > MAX_SPEED) {
                 velocity.normalize().multiplyScalar(MAX_SPEED);
             }
 
-            // Трение
             velocity.multiplyScalar(friction);
 
-            // Останавливаем если почти ноль
             if (velocity.length() < 0.001) {
                 velocity.set(0, 0, 0);
             }
 
-            // Обновляем позицию
             position.add(velocity);
 
-            // Ограничиваем поле
-            const BOUNDARY = 25;
+            // Ограничиваем поле (как в предыдущей версии)
+            const BOUNDARY = 8;
             if (Math.abs(position.x) > BOUNDARY) {
                 position.x = Math.sign(position.x) * BOUNDARY;
                 velocity.x = 0;
@@ -410,11 +380,9 @@
                 velocity.z = 0;
             }
 
-            // --- Применяем трансформации к модели ---
             car.position.copy(position);
             car.rotation.y = carState.rotation;
 
-            // Наклон при повороте (немного реализма)
             if (Math.abs(turn) > 0.01 && velocity.length() > 0.1) {
                 const tilt = -turn * velocity.length() * 0.3;
                 car.rotation.z = tilt;
@@ -422,10 +390,7 @@
                 car.rotation.z *= 0.9;
             }
 
-            // Лёгкая подвеска
-            car.position.y = SPAWN_POS.y + Math.sin(Date.now() / 500) * 0.002;
-
-            // --- Обновляем HUD ---
+            // Обновляем HUD
             const speedKmh = Math.round(velocity.length() * 120);
             document.getElementById('speedDisplay').textContent = speedKmh;
 
@@ -436,27 +401,23 @@
         // --------------------------------------------------------------
         // 6. КАМЕРА ОТ ТРЕТЬЕГО ЛИЦА
         // --------------------------------------------------------------
-        let cameraOffset = new THREE.Vector3(0, 4, 7);
         let cameraTarget = new THREE.Vector3(0, 1, 0);
 
         function updateCamera() {
             if (!car || !carLoaded) return;
 
-            // Позиция камеры относительно машины
             const carPos = car.position.clone();
             
-            // Смещаем камеру назад и вверх
+            // Смещаем камеру назад и вверх относительно направления машины
             const offset = new THREE.Vector3(
                 -Math.sin(carState.rotation) * 7,
                 4,
                 -Math.cos(carState.rotation) * 7
             );
             
-            // Плавное следование камеры
             const desiredPos = carPos.clone().add(offset);
             camera.position.lerp(desiredPos, 0.08);
 
-            // Смотрим на машину
             const lookTarget = carPos.clone();
             lookTarget.y += 0.5;
             cameraTarget.lerp(lookTarget, 0.08);
