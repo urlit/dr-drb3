@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Москвич 2141 — 3D-симулятор</title>
+    <title>Subaru Outback — 3D-симулятор</title>
     <style>
         * {
             margin: 0;
@@ -97,14 +97,39 @@
             opacity: 0.7;
         }
 
+        /* Кнопка переключения модели */
+        #switchBtn {
+            position: absolute;
+            top: 80px;
+            right: 20px;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            padding: 12px 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: white;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+            pointer-events: auto;
+        }
+        #switchBtn:hover {
+            background: rgba(255, 107, 53, 0.3);
+            border-color: #ff6b35;
+        }
+
         @media (max-width: 768px) {
             #hud { padding: 8px 16px; min-width: auto; width: 90%; bottom: 16px; }
             #hud .speed { font-size: 1.5rem; }
             #controls-hint { font-size: 0.6rem; padding: 6px 14px; white-space: normal; max-width: 90%; top: 12px; }
+            #switchBtn { top: 70px; right: 10px; padding: 8px 14px; font-size: 0.8rem; }
         }
     </style>
 </head>
 <body>
+
+    <button id="switchBtn">🚗 Переключить на Москвич</button>
 
     <div id="controls-hint">
         <strong>W</strong> — газ &nbsp;·&nbsp; <strong>S</strong> — тормоз/задний ход &nbsp;·&nbsp; <strong>A/D</strong> — руль &nbsp;·&nbsp; <strong>Пробел</strong> — ручник
@@ -117,7 +142,7 @@
 
     <div id="loading">
         <div class="spinner"></div>
-        <p>Загрузка Москвича...</p>
+        <p id="loadStatus">Загрузка Subaru Outback...</p>
     </div>
 
     <script type="importmap">
@@ -140,7 +165,7 @@
         scene.background = new THREE.Color(0x0a0a1a);
 
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(-47.14, 5, -33.72); // Камера над машиной
+        camera.position.set(0, 5, 8);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -180,7 +205,7 @@
         scene.add(fillLight);
 
         // --------------------------------------------------------------
-        // 3. ПОЛ (большая карта для координат)
+        // 3. ПОЛ (большая карта)
         // --------------------------------------------------------------
         const groundGeo = new THREE.PlaneGeometry(100, 100);
         const groundMat = new THREE.ShadowMaterial({
@@ -211,83 +236,25 @@
         marker.position.y = -0.48;
         scene.add(marker);
 
-        // Добавим оси для ориентации
+        // Оси для ориентации
         const axesHelper = new THREE.AxesHelper(5);
         axesHelper.position.y = -0.45;
         scene.add(axesHelper);
 
         // --------------------------------------------------------------
-        // 4. ЗАГРУЗКА МОДЕЛИ МОСКВИЧА
+        // 4. ЗАГРУЗКА МОДЕЛЕЙ
         // --------------------------------------------------------------
         const loader = new GLTFLoader();
         const loadingDiv = document.getElementById('loading');
+        const loadStatus = document.getElementById('loadStatus');
 
-        let car = null;
+        let currentCar = null;
+        let currentModel = 'subaru';
         let carLoaded = false;
 
-        // Координаты спавна
-        const SPAWN_POS = new THREE.Vector3(-47.14, 0.32, -40.72);
-
-        loader.load(
-            'moskvich.glb',
-            (gltf) => {
-                car = gltf.scene;
-
-                // Масштабируем
-                const box = new THREE.Box3().setFromObject(car);
-                const size = box.getSize(new THREE.Vector3());
-                const maxDim = Math.max(size.x, size.y, size.z);
-                const targetSize = 2.0;
-                if (maxDim > 0.01) {
-                    const s = targetSize / maxDim;
-                    car.scale.set(s, s, s);
-                }
-
-                // Центрируем модель
-                const center = new THREE.Vector3();
-                box.getCenter(center);
-                car.position.sub(center);
-                
-                // Ставим на точку спавна
-                car.position.x = SPAWN_POS.x;
-                car.position.y = SPAWN_POS.y;
-                car.position.z = SPAWN_POS.z;
-
-                // Тени
-                car.traverse((child) => {
-                    if (child.isMesh) {
-                        child.castShadow = true;
-                        child.receiveShadow = true;
-                    }
-                });
-
-                scene.add(car);
-                carLoaded = true;
-                loadingDiv.style.display = 'none';
-
-                console.log('✅ Москвич загружен на позиции:', SPAWN_POS);
-            },
-            (xhr) => {
-                const percent = Math.round((xhr.loaded / xhr.total) * 100);
-                const p = loadingDiv.querySelector('p');
-                if (p) p.textContent = `Загрузка Москвича... ${percent}%`;
-            },
-            (error) => {
-                console.error('Ошибка загрузки:', error);
-                loadingDiv.innerHTML = `
-                    <p style="color: #ff6b35; font-weight: 500;">
-                        ❌ Не удалось загрузить модель.<br>
-                        Проверьте путь к файлу <code>moskvich.glb</code>.
-                    </p>
-                `;
-            }
-        );
-
-        // --------------------------------------------------------------
-        // 5. ФИЗИКА АВТОМОБИЛЯ (исправленная)
-        // --------------------------------------------------------------
+        // Состояние машины
         const carState = {
-            position: new THREE.Vector3(SPAWN_POS.x, SPAWN_POS.y, SPAWN_POS.z),
+            position: new THREE.Vector3(0, 0, 0),
             velocity: new THREE.Vector3(0, 0, 0),
             rotation: 0,
         };
@@ -307,13 +274,138 @@
             space: false,
         };
 
-        // Обработка клавиш
+        // Функция загрузки модели
+        function loadModel(modelName, path) {
+            return new Promise((resolve, reject) => {
+                loadStatus.textContent = `Загрузка ${modelName === 'subaru' ? 'Subaru Outback' : 'Москвич 2141'}...`;
+
+                loader.load(
+                    path,
+                    (gltf) => {
+                        const model = gltf.scene;
+
+                        // Масштабируем
+                        const box = new THREE.Box3().setFromObject(model);
+                        const size = box.getSize(new THREE.Vector3());
+                        const maxDim = Math.max(size.x, size.y, size.z);
+                        const targetSize = 2.0;
+                        if (maxDim > 0.01) {
+                            const s = targetSize / maxDim;
+                            model.scale.set(s, s, s);
+                        }
+
+                        // Центрируем модель
+                        const center = new THREE.Vector3();
+                        box.getCenter(center);
+                        model.position.sub(center);
+                        
+                        // Ставим в центр (0, 0, 0)
+                        model.position.x = 0;
+                        model.position.y = 0;
+                        model.position.z = 0;
+
+                        // Тени
+                        model.traverse((child) => {
+                            if (child.isMesh) {
+                                child.castShadow = true;
+                                child.receiveShadow = true;
+                            }
+                        });
+
+                        scene.add(model);
+                        resolve(model);
+                    },
+                    (xhr) => {
+                        const percent = Math.round((xhr.loaded / xhr.total) * 100);
+                        loadStatus.textContent = `Загрузка... ${percent}%`;
+                    },
+                    (error) => {
+                        console.error('Ошибка загрузки:', error);
+                        reject(error);
+                    }
+                );
+            });
+        }
+
+        // Загружаем Subaru
+        let subaruModel = null;
+        let moskvichModel = null;
+
+        async function init() {
+            try {
+                subaruModel = await loadModel('subaru', 'subaru_outback.glb');
+                currentCar = subaruModel;
+                carLoaded = true;
+                loadingDiv.style.display = 'none';
+                console.log('✅ Subaru Outback загружен в центре (0, 0, 0)');
+                
+                // Загружаем Москвич в фоне
+                try {
+                    moskvichModel = await loadModel('moskvich', 'moskvich.glb');
+                    moskvichModel.visible = false;
+                    console.log('✅ Москвич загружен в фоне');
+                } catch (e) {
+                    console.warn('Москвич не загружен:', e);
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки:', error);
+                loadingDiv.innerHTML = `
+                    <p style="color: #ff6b35; font-weight: 500;">
+                        ❌ Не удалось загрузить модель.<br>
+                        Проверьте путь к файлу <code>subaru_outback.glb</code>.
+                    </p>
+                `;
+            }
+        }
+
+        init();
+
+        // --------------------------------------------------------------
+        // 5. ПЕРЕКЛЮЧЕНИЕ МОДЕЛЕЙ
+        // --------------------------------------------------------------
+        const switchBtn = document.getElementById('switchBtn');
+        let isSubaru = true;
+
+        switchBtn.addEventListener('click', () => {
+            if (!subaruModel || !moskvichModel) return;
+
+            // Скрываем текущую
+            if (isSubaru) {
+                subaruModel.visible = false;
+                moskvichModel.visible = true;
+                currentCar = moskvichModel;
+                switchBtn.textContent = '🚗 Переключить на Subaru';
+                document.querySelector('#controls-hint').innerHTML = 
+                    '<strong>W</strong> — газ &nbsp;·&nbsp; <strong>S</strong> — тормоз/задний ход &nbsp;·&nbsp; <strong>A/D</strong> — руль &nbsp;·&nbsp; <strong>Пробел</strong> — ручник &nbsp;·&nbsp; 🚗 Москвич';
+            } else {
+                subaruModel.visible = true;
+                moskvichModel.visible = false;
+                currentCar = subaruModel;
+                switchBtn.textContent = '🚗 Переключить на Москвич';
+                document.querySelector('#controls-hint').innerHTML = 
+                    '<strong>W</strong> — газ &nbsp;·&nbsp; <strong>S</strong> — тормоз/задний ход &nbsp;·&nbsp; <strong>A/D</strong> — руль &nbsp;·&nbsp; <strong>Пробел</strong> — ручник &nbsp;·&nbsp; 🚙 Subaru';
+            }
+            
+            isSubaru = !isSubaru;
+            
+            // Сбрасываем позицию при переключении
+            carState.position.set(0, 0, 0);
+            carState.velocity.set(0, 0, 0);
+            carState.rotation = 0;
+            if (currentCar) {
+                currentCar.position.set(0, 0, 0);
+                currentCar.rotation.y = 0;
+            }
+        });
+
+        // --------------------------------------------------------------
+        // 6. УПРАВЛЕНИЕ
+        // --------------------------------------------------------------
         document.addEventListener('keydown', (e) => {
             const key = e.key.toLowerCase();
             if (key === 'w' || key === 's' || key === 'a' || key === 'd') {
                 keys[key] = true;
                 e.preventDefault();
-                console.log('Клавиша нажата:', key); // Отладка
             }
             if (e.key === ' ') {
                 keys.space = true;
@@ -334,58 +426,44 @@
         });
 
         function updateCar() {
-            if (!car || !carLoaded) return;
+            if (!currentCar || !carLoaded) return;
 
             const { position, velocity, rotation } = carState;
 
-            // Ускорение
             let acceleration = 0;
             let turn = 0;
 
-            // Газ (W)
             if (keys.w) {
                 acceleration = ENGINE_FORCE;
-                console.log('Газ!'); // Отладка
             }
             
-            // Тормоз/задний ход (S)
             if (keys.s) {
                 acceleration = -ENGINE_FORCE * 0.5;
             }
 
-            // Повороты (A/D)
             if (keys.a) turn = TURN_SPEED;
             if (keys.d) turn = -TURN_SPEED;
 
-            // Поворачиваем только если есть скорость
             if (Math.abs(velocity.length()) > 0.01) {
                 carState.rotation += turn;
             }
 
-            // Движение вперёд/назад
             const forward = new THREE.Vector3(-Math.sin(rotation), 0, -Math.cos(rotation));
-            
-            // Добавляем ускорение
             velocity.add(forward.clone().multiplyScalar(acceleration));
 
-            // Ограничиваем скорость
             const currentSpeed = velocity.length();
             if (currentSpeed > MAX_SPEED) {
                 velocity.multiplyScalar(MAX_SPEED / currentSpeed);
             }
 
-            // Трение
             velocity.multiplyScalar(FRICTION);
 
-            // Останавливаем если почти ноль
             if (velocity.length() < 0.001) {
                 velocity.set(0, 0, 0);
             }
 
-            // Обновляем позицию
             position.add(velocity);
 
-            // Ограничиваем поле (большая карта)
             const BOUNDARY = 45;
             if (Math.abs(position.x) > BOUNDARY) {
                 position.x = Math.sign(position.x) * BOUNDARY;
@@ -396,22 +474,18 @@
                 velocity.z = 0;
             }
 
-            // Применяем трансформации к модели
-            car.position.copy(position);
-            car.rotation.y = rotation;
+            currentCar.position.copy(position);
+            currentCar.rotation.y = rotation;
 
-            // Наклон при повороте
             if (Math.abs(turn) > 0.001 && velocity.length() > 0.05) {
                 const tilt = -turn * velocity.length() * 0.5;
-                car.rotation.z = tilt;
+                currentCar.rotation.z = tilt;
             } else {
-                car.rotation.z *= 0.9;
+                currentCar.rotation.z *= 0.9;
             }
 
-            // Лёгкая подвеска
-            car.position.y = SPAWN_POS.y + Math.sin(Date.now() / 500) * 0.002;
+            currentCar.position.y = 0 + Math.sin(Date.now() / 500) * 0.002;
 
-            // Обновляем HUD
             const speedKmh = Math.round(velocity.length() * 150);
             document.getElementById('speedDisplay').textContent = speedKmh;
 
@@ -420,17 +494,15 @@
         }
 
         // --------------------------------------------------------------
-        // 6. КАМЕРА ОТ ТРЕТЬЕГО ЛИЦА
+        // 7. КАМЕРА ОТ ТРЕТЬЕГО ЛИЦА
         // --------------------------------------------------------------
-        let cameraOffset = new THREE.Vector3(0, 3, 5);
         let cameraTarget = new THREE.Vector3(0, 0.5, 0);
 
         function updateCamera() {
-            if (!car || !carLoaded) return;
+            if (!currentCar || !carLoaded) return;
 
-            const carPos = car.position.clone();
+            const carPos = currentCar.position.clone();
             
-            // Камера сзади-сверху
             const offset = new THREE.Vector3(
                 -Math.sin(carState.rotation) * 6,
                 4,
@@ -440,7 +512,6 @@
             const desiredPos = carPos.clone().add(offset);
             camera.position.lerp(desiredPos, 0.1);
 
-            // Смотрим на машину
             const lookTarget = carPos.clone();
             lookTarget.y += 0.5;
             cameraTarget.lerp(lookTarget, 0.1);
@@ -448,7 +519,7 @@
         }
 
         // --------------------------------------------------------------
-        // 7. АДАПТАЦИЯ ПОД ОКНО
+        // 8. АДАПТАЦИЯ ПОД ОКНО
         // --------------------------------------------------------------
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
@@ -457,7 +528,7 @@
         });
 
         // --------------------------------------------------------------
-        // 8. АНИМАЦИОННЫЙ ЦИКЛ
+        // 9. АНИМАЦИОННЫЙ ЦИКЛ
         // --------------------------------------------------------------
         function animate() {
             requestAnimationFrame(animate);
@@ -469,10 +540,10 @@
         }
         animate();
 
-        console.log('🚗 Москвич 2141 — симулятор запущен!');
-        console.log('📍 Точка спавна:', SPAWN_POS);
+        console.log('🚙 Subaru Outback — симулятор запущен!');
+        console.log('📍 Спавн в центре (0, 0, 0)');
         console.log('📖 Управление: W-газ, S-тормоз, A/D-руль, Пробел-ручник');
-        console.log('💡 Проверьте консоль при нажатии клавиш для отладки');
+        console.log('🔄 Кнопка справа переключает на Москвич');
     </script>
 </body>
 </html>
