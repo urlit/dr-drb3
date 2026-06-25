@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>3D-гараж — Москвич 2141 & Subaru Outback</title>
+    <title>Москвич 2141 — 3D-симулятор</title>
     <style>
-        /* ---- Сброс и фон ---- */
         * {
             margin: 0;
             padding: 0;
@@ -18,10 +17,9 @@
             color: white;
         }
 
-        /* ---- Верхняя панель ---- */
-        #header {
+        #hud {
             position: absolute;
-            top: 20px;
+            bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 10;
@@ -35,162 +33,26 @@
             user-select: none;
             min-width: 200px;
         }
-        #header h1 {
-            font-size: 1.4rem;
-            font-weight: 500;
-            letter-spacing: 0.5px;
+        #hud .speed {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #ff6b35;
         }
-        #header h1 small {
-            font-size: 0.85rem;
-            font-weight: 300;
-            color: #aaa;
-            display: block;
-            margin-top: 2px;
-        }
-
-        /* ---- Боковая панель управления ---- */
-        #panel {
-            position: absolute;
-            top: 100px;
-            right: 20px;
-            z-index: 10;
-            background: rgba(0, 0, 0, 0.75);
-            backdrop-filter: blur(12px);
-            padding: 20px;
-            border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            width: 250px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            max-height: calc(100vh - 140px);
-            overflow-y: auto;
-        }
-        #panel h3 {
-            font-size: 0.9rem;
+        #hud .speed small {
+            font-size: 1rem;
             font-weight: 400;
             color: #888;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 4px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            padding-bottom: 8px;
         }
-
-        /* ---- Кнопки выбора модели ---- */
-        .model-selector {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-        .model-btn {
-            background: rgba(255, 255, 255, 0.05);
-            border: 2px solid transparent;
-            color: #fff;
-            padding: 10px 16px;
-            border-radius: 10px;
-            font-size: 0.95rem;
-            cursor: pointer;
-            transition: all 0.25s;
-            font-weight: 500;
-            text-align: left;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .model-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-        .model-btn.active {
-            background: rgba(255, 107, 53, 0.2);
-            border-color: #ff6b35;
-            box-shadow: 0 0 20px rgba(255, 107, 53, 0.1);
-        }
-        .model-btn .badge {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #ff6b35;
-            flex-shrink: 0;
-        }
-        .model-btn .badge.inactive {
-            background: #555;
-        }
-
-        /* ---- Координаты ---- */
-        #coords {
-            background: rgba(0, 0, 0, 0.4);
-            border-radius: 10px;
-            padding: 12px 14px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.85rem;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-        }
-        #coords .label {
-            color: #888;
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        #coords .value {
+        #hud .coords {
+            font-size: 0.8rem;
             color: #88ddff;
+            font-family: 'Courier New', monospace;
             margin-top: 4px;
-            display: block;
-            word-break: break-all;
         }
 
-        /* ---- Кнопки действий ---- */
-        .action-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-        .action-btn {
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            color: #fff;
-            padding: 8px 14px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-weight: 400;
-        }
-        .action-btn:hover {
-            background: rgba(255, 255, 255, 0.12);
-        }
-        .action-btn.primary {
-            background: #ff6b35;
-            border-color: #ff6b35;
-            font-weight: 500;
-        }
-        .action-btn.primary:hover {
-            background: #ff7a4a;
-            transform: scale(1.02);
-        }
-        .action-btn.success {
-            background: #22aa55;
-            border-color: #22aa55;
-            font-weight: 500;
-        }
-        .action-btn.success:hover {
-            background: #2abb66;
-            transform: scale(1.02);
-        }
-        .action-btn.danger {
-            border-color: #ff3355;
-            color: #ff3355;
-        }
-        .action-btn.danger:hover {
-            background: rgba(255, 51, 85, 0.15);
-        }
-
-        /* ---- Подсказка по управлению ---- */
         #controls-hint {
             position: absolute;
-            bottom: 30px;
+            top: 20px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 10;
@@ -209,7 +71,6 @@
             color: #fff;
         }
 
-        /* ---- Индикатор загрузки ---- */
         #loading {
             position: absolute;
             top: 50%;
@@ -236,81 +97,29 @@
             opacity: 0.7;
         }
 
-        /* ---- Адаптивность ---- */
         @media (max-width: 768px) {
-            #panel {
-                right: 10px;
-                top: 80px;
-                width: 200px;
-                padding: 14px;
-                font-size: 0.85rem;
-            }
-            #header {
-                top: 12px;
-                padding: 8px 16px;
-                min-width: auto;
-                width: 90%;
-            }
-            #header h1 {
-                font-size: 1.1rem;
-            }
-            #controls-hint {
-                font-size: 0.65rem;
-                padding: 6px 14px;
-                bottom: 16px;
-                white-space: normal;
-                max-width: 90%;
-            }
+            #hud { padding: 8px 16px; min-width: auto; width: 90%; bottom: 16px; }
+            #hud .speed { font-size: 1.5rem; }
+            #controls-hint { font-size: 0.6rem; padding: 6px 14px; white-space: normal; max-width: 90%; top: 12px; }
         }
     </style>
 </head>
 <body>
 
-    <!-- Верхний заголовок -->
-    <div id="header">
-        <h1>🚗 3D-Гараж <small>Москвич 2141 · Subaru Outback</small></h1>
-    </div>
-
-    <!-- Боковая панель -->
-    <div id="panel">
-        <h3>📦 Модели</h3>
-        <div class="model-selector">
-            <button class="model-btn active" data-model="moskvich">
-                <span class="badge"></span> Москвич 2141
-            </button>
-            <button class="model-btn" data-model="subaru">
-                <span class="badge inactive"></span> Subaru Outback
-            </button>
-        </div>
-
-        <h3>📍 Координаты</h3>
-        <div id="coords">
-            <span class="label">X · Y · Z</span>
-            <span class="value" id="coordDisplay">0.00 · 0.00 · 0.00</span>
-        </div>
-
-        <h3>🎮 Действия</h3>
-        <div class="action-buttons">
-            <button class="action-btn success" id="btnCenterModel">🎯 В центр (0, 0, 0)</button>
-            <button class="action-btn" id="btnResetPos">↺ Сброс позиции</button>
-            <button class="action-btn primary" id="btnSavePos">💾 Сохранить позицию</button>
-            <button class="action-btn" id="btnFocus">👁 Фокус на модель</button>
-            <button class="action-btn danger" id="btnResetCamera">📷 Сброс камеры</button>
-        </div>
-    </div>
-
-    <!-- Подсказка внизу -->
     <div id="controls-hint">
-        <strong>W A S D</strong> — перемещение &nbsp;·&nbsp; <strong>Стрелки</strong> — движение &nbsp;·&nbsp; <strong>Мышь</strong> — вращение камеры
+        <strong>W</strong> — газ &nbsp;·&nbsp; <strong>S</strong> — тормоз/задний ход &nbsp;·&nbsp; <strong>A/D</strong> — руль &nbsp;·&nbsp; <strong>Пробел</strong> — ручник
     </div>
 
-    <!-- Индикатор загрузки -->
+    <div id="hud">
+        <div class="speed"><span id="speedDisplay">0</span> <small>км/ч</small></div>
+        <div class="coords" id="coordDisplay">📍 0.00 · 0.00 · 0.00</div>
+    </div>
+
     <div id="loading">
         <div class="spinner"></div>
-        <p id="loadStatus">Загрузка моделей...</p>
+        <p>Загрузка Москвича...</p>
     </div>
 
-    <!-- Three.js -->
     <script type="importmap">
         {
             "imports": {
@@ -322,18 +131,17 @@
 
     <script type="module">
         import * as THREE from 'three';
-        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
         // --------------------------------------------------------------
         // 1. СЦЕНА, КАМЕРА, РЕНДЕРЕР
         // --------------------------------------------------------------
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x0a0a1a);
+        scene.background = new THREE.Color(0x1a1a2e);
+        scene.fog = new THREE.Fog(0x1a1a2e, 20, 50); // Туман для атмосферы
 
-        const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(6, 4, 8);
-        camera.lookAt(0, 0, 0);
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 5, 8);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -345,52 +153,59 @@
         document.body.appendChild(renderer.domElement);
 
         // --------------------------------------------------------------
-        // 2. УПРАВЛЕНИЕ (OrbitControls)
+        // 2. ОСВЕЩЕНИЕ
         // --------------------------------------------------------------
-        const controls = new OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.08;
-        controls.autoRotate = false;
-        controls.minDistance = 2;
-        controls.maxDistance = 20;
-        controls.target.set(0, 0.3, 0);
-        controls.update();
-
-        // --------------------------------------------------------------
-        // 3. ОСВЕЩЕНИЕ
-        // --------------------------------------------------------------
-        const ambientLight = new THREE.AmbientLight(0x404060, 0.6);
+        const ambientLight = new THREE.AmbientLight(0x404060, 0.5);
         scene.add(ambientLight);
 
         const dirLight = new THREE.DirectionalLight(0xffeedd, 2.5);
-        dirLight.position.set(6, 10, 6);
+        dirLight.position.set(10, 15, 10);
         dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 2048;
-        dirLight.shadow.mapSize.height = 2048;
-        dirLight.shadow.bias = -0.001;
+        dirLight.shadow.mapSize.width = 4096;
+        dirLight.shadow.mapSize.height = 4096;
         dirLight.shadow.camera.near = 0.1;
-        dirLight.shadow.camera.far = 30;
-        dirLight.shadow.camera.left = -10;
-        dirLight.shadow.camera.right = 10;
-        dirLight.shadow.camera.top = 10;
-        dirLight.shadow.camera.bottom = -10;
+        dirLight.shadow.camera.far = 60;
+        dirLight.shadow.camera.left = -30;
+        dirLight.shadow.camera.right = 30;
+        dirLight.shadow.camera.top = 30;
+        dirLight.shadow.camera.bottom = -30;
         scene.add(dirLight);
 
-        const backLight = new THREE.DirectionalLight(0x4488ff, 0.6);
-        backLight.position.set(-4, 2, -6);
-        scene.add(backLight);
-
-        const fillLight = new THREE.PointLight(0xff6633, 0.4, 15);
-        fillLight.position.set(0, -1, 3);
-        scene.add(fillLight);
+        const hemiLight = new THREE.HemisphereLight(0x87ceeb, 0x362d1e, 0.6);
+        scene.add(hemiLight);
 
         // --------------------------------------------------------------
-        // 4. ПОЛ (большая платформа)
+        // 3. ПОЛ (большое поле)
         // --------------------------------------------------------------
-        const groundGeo = new THREE.PlaneGeometry(20, 20);
-        const groundMat = new THREE.ShadowMaterial({
-            opacity: 0.3,
-            color: 0x000000,
+        // Текстура травы (создаём procedural)
+        const canvas = document.createElement('canvas');
+        canvas.width = 512;
+        canvas.height = 512;
+        const ctx = canvas.getContext('2d');
+        
+        // Зелёный фон
+        ctx.fillStyle = '#2d5a1e';
+        ctx.fillRect(0, 0, 512, 512);
+        
+        // Трава (случайные точки)
+        for (let i = 0; i < 20000; i++) {
+            const x = Math.random() * 512;
+            const y = Math.random() * 512;
+            const size = 1 + Math.random() * 2;
+            const green = 80 + Math.random() * 80;
+            ctx.fillStyle = `rgb(40, ${green}, 20)`;
+            ctx.fillRect(x, y, size, size);
+        }
+        
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(20, 20);
+
+        const groundGeo = new THREE.PlaneGeometry(60, 60);
+        const groundMat = new THREE.MeshStandardMaterial({
+            map: texture,
+            roughness: 0.9,
+            metalness: 0.0,
         });
         const ground = new THREE.Mesh(groundGeo, groundMat);
         ground.rotation.x = -Math.PI / 2;
@@ -398,254 +213,258 @@
         ground.receiveShadow = true;
         scene.add(ground);
 
-        const gridHelper = new THREE.GridHelper(12, 20, 0x6666aa, 0x333355);
-        gridHelper.position.y = -0.49;
+        // Сетка для ориентации
+        const gridHelper = new THREE.GridHelper(40, 40, 0x88ff88, 0x44aa44);
+        gridHelper.position.y = -0.48;
         scene.add(gridHelper);
 
-        // Центральный маркер
-        const markerGeo = new THREE.RingGeometry(0.4, 0.6, 32);
-        const markerMat = new THREE.MeshBasicMaterial({
-            color: 0xff6b35,
-            side: THREE.DoubleSide,
-            transparent: true,
-            opacity: 0.3,
-        });
-        const marker = new THREE.Mesh(markerGeo, markerMat);
-        marker.rotation.x = -Math.PI / 2;
-        marker.position.y = -0.48;
-        scene.add(marker);
-
         // --------------------------------------------------------------
-        // 5. ЗАГРУЗЧИК МОДЕЛЕЙ
+        // 4. ЗАГРУЗКА МОДЕЛИ МОСКВИЧА
         // --------------------------------------------------------------
         const loader = new GLTFLoader();
         const loadingDiv = document.getElementById('loading');
-        const loadStatus = document.getElementById('loadStatus');
 
-        const models = {
-            moskvich: { object: null, loaded: false },
-            subaru: { object: null, loaded: false }
-        };
+        let car = null;
+        let carLoaded = false;
 
-        let activeModel = 'moskvich';
+        // Координаты спавна
+        const SPAWN_POS = new THREE.Vector3(-47.14, 0.32, -40.72);
 
-        // Функция загрузки модели с принудительной центровкой
-        function loadModel(key, path) {
-            loadStatus.textContent = `Загрузка ${key === 'moskvich' ? 'Москвича' : 'Subaru'}...`;
+        loader.load(
+            'moskvich.glb',
+            (gltf) => {
+                car = gltf.scene;
 
-            return new Promise((resolve) => {
-                loader.load(
-                    path,
-                    (gltf) => {
-                        const model = gltf.scene;
+                // Масштабирование
+                const box = new THREE.Box3().setFromObject(car);
+                const size = box.getSize(new THREE.Vector3());
+                const maxDim = Math.max(size.x, size.y, size.z);
+                const targetSize = 2.0;
+                if (maxDim > 0.01) {
+                    const s = targetSize / maxDim;
+                    car.scale.set(s, s, s);
+                }
 
-                        // ---- ПРИНУДИТЕЛЬНАЯ ЦЕНТРОВКА В (0,0,0) ----
-                        // 1. Вычисляем bounding box
-                        const box = new THREE.Box3().setFromObject(model);
-                        const size = box.getSize(new THREE.Vector3());
-                        const center = new THREE.Vector3();
-                        box.getCenter(center);
+                // Центрируем и ставим на спавн
+                const center = new THREE.Vector3();
+                box.getCenter(center);
+                car.position.sub(center);
+                
+                // Ставим на точку спавна
+                car.position.x = SPAWN_POS.x;
+                car.position.y = SPAWN_POS.y;
+                car.position.z = SPAWN_POS.z;
 
-                        // 2. Масштабируем до разумного размера
-                        const maxDim = Math.max(size.x, size.y, size.z);
-                        const targetSize = 2.0;
-                        if (maxDim > 0.01) {
-                            const scale = targetSize / maxDim;
-                            model.scale.set(scale, scale, scale);
+                // Тени
+                car.traverse((child) => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                        // Добавляем немного блеска кузову
+                        if (child.material) {
+                            child.material.roughness = 0.3;
+                            child.material.metalness = 0.6;
                         }
-
-                        // 3. Центрируем модель (переносим так, чтобы центр геометрии был в (0,0,0))
-                        // Сначала применяем масштаб к центру
-                        const scaledCenter = center.clone().multiply(model.scale);
-                        model.position.sub(scaledCenter);
-                        
-                        // 4. Опускаем на пол (чтобы нижняя точка была на Y=0)
-                        // Заново вычисляем bounding box после центровки
-                        const newBox = new THREE.Box3().setFromObject(model);
-                        const minY = newBox.min.y;
-                        model.position.y = -minY; // Поднимаем так, чтобы минимум был на 0
-
-                        console.log(`✅ ${key} центрирована в (0, 0, 0)`);
-
-                        // Тени
-                        model.traverse((child) => {
-                            if (child.isMesh) {
-                                child.castShadow = true;
-                                child.receiveShadow = true;
-                            }
-                        });
-
-                        // Прячем изначально
-                        model.visible = (key === activeModel);
-
-                        scene.add(model);
-
-                        models[key].object = model;
-                        models[key].loaded = true;
-
-                        resolve(model);
-                    },
-                    undefined,
-                    (error) => {
-                        console.error(`Ошибка загрузки ${key}:`, error);
-                        loadStatus.textContent = `❌ Ошибка: ${path}`;
-                        resolve(null);
-                    }
-                );
-            });
-        }
-
-        // Загружаем обе модели
-        Promise.all([
-            loadModel('moskvich', 'moskvich.glb'),
-            loadModel('subaru', 'subaru_outback.glb')
-        ]).then(() => {
-            loadingDiv.style.display = 'none';
-            updateCoordDisplay();
-        });
-
-        // --------------------------------------------------------------
-        // 6. УПРАВЛЕНИЕ МОДЕЛЯМИ
-        // --------------------------------------------------------------
-        document.querySelectorAll('.model-btn').forEach((btn) => {
-            btn.addEventListener('click', () => {
-                const key = btn.dataset.model;
-                activeModel = key;
-
-                document.querySelectorAll('.model-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-
-                Object.keys(models).forEach(k => {
-                    if (models[k].object) {
-                        models[k].object.visible = (k === key);
                     }
                 });
 
-                updateCoordDisplay();
-            });
-        });
+                scene.add(car);
+                carLoaded = true;
+                loadingDiv.style.display = 'none';
 
-        function getActiveModelObject() {
-            return models[activeModel]?.object || null;
-        }
-
-        function updateCoordDisplay() {
-            const obj = getActiveModelObject();
-            if (obj) {
-                const p = obj.position;
-                document.getElementById('coordDisplay').textContent =
-                    `${p.x.toFixed(2)} · ${p.y.toFixed(2)} · ${p.z.toFixed(2)}`;
-            } else {
-                document.getElementById('coordDisplay').textContent = '— · — · —';
+                console.log('✅ Москвич загружен на позиции:', SPAWN_POS);
+            },
+            (xhr) => {
+                const percent = Math.round((xhr.loaded / xhr.total) * 100);
+                const p = loadingDiv.querySelector('p');
+                if (p) p.textContent = `Загрузка Москвича... ${percent}%`;
+            },
+            (error) => {
+                console.error('Ошибка загрузки:', error);
+                loadingDiv.innerHTML = `
+                    <p style="color: #ff6b35; font-weight: 500;">
+                        ❌ Не удалось загрузить модель.<br>
+                        Проверьте путь к файлу <code>moskvich.glb</code>.
+                    </p>
+                `;
             }
-        }
+        );
 
         // --------------------------------------------------------------
-        // 7. ПЕРЕМЕЩЕНИЕ МОДЕЛИ (WASD + Стрелки)
+        // 5. ФИЗИКА АВТОМОБИЛЯ
         // --------------------------------------------------------------
-        const moveSpeed = 0.08;
-        const keys = {};
+        const carState = {
+            position: new THREE.Vector3(SPAWN_POS.x, SPAWN_POS.y, SPAWN_POS.z),
+            velocity: new THREE.Vector3(0, 0, 0),
+            rotation: 0, // угол поворота в радианах
+            speed: 0,
+        };
+
+        // Параметры управления
+        const ENGINE_FORCE = 0.15;
+        const BRAKE_FORCE = 0.08;
+        const MAX_SPEED = 0.8;
+        const TURN_SPEED = 0.035;
+        const FRICTION = 0.97;
+        const DRIFT_FRICTION = 0.92;
+
+        const keys = {
+            w: false,
+            s: false,
+            a: false,
+            d: false,
+            space: false,
+        };
 
         document.addEventListener('keydown', (e) => {
-            keys[e.key] = true;
-            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+            const key = e.key.toLowerCase();
+            if (key in keys) {
+                keys[key] = true;
+                e.preventDefault();
+            }
+            if (e.key === ' ') {
+                keys.space = true;
                 e.preventDefault();
             }
         });
+
         document.addEventListener('keyup', (e) => {
-            keys[e.key] = false;
+            const key = e.key.toLowerCase();
+            if (key in keys) {
+                keys[key] = false;
+                e.preventDefault();
+            }
+            if (e.key === ' ') {
+                keys.space = false;
+                e.preventDefault();
+            }
         });
 
-        function moveActiveModel() {
-            const obj = getActiveModelObject();
-            if (!obj) return;
+        function updateCar() {
+            if (!car || !carLoaded) return;
 
-            let dx = 0,
-                dz = 0;
+            const { position, velocity, rotation } = carState;
 
-            if (keys['w'] || keys['W'] || keys['ArrowUp']) dz -= moveSpeed;
-            if (keys['s'] || keys['S'] || keys['ArrowDown']) dz += moveSpeed;
-            if (keys['a'] || keys['A'] || keys['ArrowLeft']) dx -= moveSpeed;
-            if (keys['d'] || keys['D'] || keys['ArrowRight']) dx += moveSpeed;
+            // --- Управление ---
+            let acceleration = 0;
+            let turn = 0;
 
-            if (dx !== 0 || dz !== 0) {
-                if (dx !== 0 && dz !== 0) {
-                    dx *= 0.707;
-                    dz *= 0.707;
-                }
-                obj.position.x += dx;
-                obj.position.z += dz;
-
-                obj.position.x = Math.max(-8, Math.min(8, obj.position.x));
-                obj.position.z = Math.max(-8, Math.min(8, obj.position.z));
-
-                updateCoordDisplay();
+            // Газ
+            if (keys.w) {
+                acceleration = ENGINE_FORCE;
             }
+            // Тормоз/задний ход
+            if (keys.s) {
+                if (Math.abs(velocity.length()) < 0.05) {
+                    // Если почти стоим - едем назад
+                    acceleration = -ENGINE_FORCE * 0.6;
+                } else {
+                    acceleration = -BRAKE_FORCE;
+                }
+            }
+
+            // Руль
+            if (keys.a) turn = TURN_SPEED;
+            if (keys.d) turn = -TURN_SPEED;
+
+            // Ручник (дрифт)
+            const isDrifting = keys.space;
+            const friction = isDrifting ? DRIFT_FRICTION : FRICTION;
+
+            // --- Применяем физику ---
+            // Поворачиваем только если едем
+            if (Math.abs(velocity.length()) > 0.01) {
+                carState.rotation += turn * (velocity.length() / 0.5);
+            }
+
+            // Двигаем вперёд/назад относительно поворота
+            const forward = new THREE.Vector3(-Math.sin(carState.rotation), 0, -Math.cos(carState.rotation));
+            
+            // Добавляем ускорение
+            velocity.add(forward.multiplyScalar(acceleration));
+
+            // Ограничиваем скорость
+            if (velocity.length() > MAX_SPEED) {
+                velocity.normalize().multiplyScalar(MAX_SPEED);
+            }
+
+            // Трение
+            velocity.multiplyScalar(friction);
+
+            // Останавливаем если почти ноль
+            if (velocity.length() < 0.001) {
+                velocity.set(0, 0, 0);
+            }
+
+            // Обновляем позицию
+            position.add(velocity);
+
+            // Ограничиваем поле
+            const BOUNDARY = 25;
+            if (Math.abs(position.x) > BOUNDARY) {
+                position.x = Math.sign(position.x) * BOUNDARY;
+                velocity.x = 0;
+            }
+            if (Math.abs(position.z) > BOUNDARY) {
+                position.z = Math.sign(position.z) * BOUNDARY;
+                velocity.z = 0;
+            }
+
+            // --- Применяем трансформации к модели ---
+            car.position.copy(position);
+            car.rotation.y = carState.rotation;
+
+            // Наклон при повороте (немного реализма)
+            if (Math.abs(turn) > 0.01 && velocity.length() > 0.1) {
+                const tilt = -turn * velocity.length() * 0.3;
+                car.rotation.z = tilt;
+            } else {
+                car.rotation.z *= 0.9;
+            }
+
+            // Лёгкая подвеска
+            car.position.y = SPAWN_POS.y + Math.sin(Date.now() / 500) * 0.002;
+
+            // --- Обновляем HUD ---
+            const speedKmh = Math.round(velocity.length() * 120);
+            document.getElementById('speedDisplay').textContent = speedKmh;
+
+            document.getElementById('coordDisplay').textContent =
+                `📍 ${position.x.toFixed(2)} · ${position.y.toFixed(2)} · ${position.z.toFixed(2)}`;
         }
 
         // --------------------------------------------------------------
-        // 8. КНОПКИ ДЕЙСТВИЙ
+        // 6. КАМЕРА ОТ ТРЕТЬЕГО ЛИЦА
         // --------------------------------------------------------------
-        
-        // Новая кнопка: поставить строго в центр (0, 0, 0)
-        document.getElementById('btnCenterModel').addEventListener('click', () => {
-            const obj = getActiveModelObject();
-            if (obj) {
-                obj.position.set(0, 0, 0);
-                updateCoordDisplay();
-                // Маленькая анимация обратной связи
-                const btn = document.getElementById('btnCenterModel');
-                btn.textContent = '✅ В центре!';
-                setTimeout(() => {
-                    btn.textContent = '🎯 В центр (0, 0, 0)';
-                }, 1500);
-            }
-        });
+        let cameraOffset = new THREE.Vector3(0, 4, 7);
+        let cameraTarget = new THREE.Vector3(0, 1, 0);
 
-        document.getElementById('btnResetPos').addEventListener('click', () => {
-            const obj = getActiveModelObject();
-            if (obj) {
-                obj.position.set(0, 0, 0);
-                updateCoordDisplay();
-            }
-        });
+        function updateCamera() {
+            if (!car || !carLoaded) return;
 
-        document.getElementById('btnSavePos').addEventListener('click', () => {
-            const obj = getActiveModelObject();
-            if (!obj) {
-                alert('Модель не загружена!');
-                return;
-            }
-            const p = obj.position;
-            const name = activeModel === 'moskvich' ? 'Москвич 2141' : 'Subaru Outback';
-            const message =
-                `📍 Позиция ${name}:\n` +
-                `X: ${p.x.toFixed(3)}\n` +
-                `Y: ${p.y.toFixed(3)}\n` +
-                `Z: ${p.z.toFixed(3)}\n\n` +
-                `(Скопируйте эти координаты)`;
+            // Позиция камеры относительно машины
+            const carPos = car.position.clone();
+            
+            // Смещаем камеру назад и вверх
+            const offset = new THREE.Vector3(
+                -Math.sin(carState.rotation) * 7,
+                4,
+                -Math.cos(carState.rotation) * 7
+            );
+            
+            // Плавное следование камеры
+            const desiredPos = carPos.clone().add(offset);
+            camera.position.lerp(desiredPos, 0.08);
 
-            console.log(`✅ Сохранена позиция ${name}:`, p.x, p.y, p.z);
-            alert(message);
-        });
-
-        document.getElementById('btnFocus').addEventListener('click', () => {
-            const obj = getActiveModelObject();
-            if (obj) {
-                const p = obj.position;
-                controls.target.copy(p);
-                controls.update();
-            }
-        });
-
-        document.getElementById('btnResetCamera').addEventListener('click', () => {
-            camera.position.set(6, 4, 8);
-            controls.target.set(0, 0.3, 0);
-            controls.update();
-        });
+            // Смотрим на машину
+            const lookTarget = carPos.clone();
+            lookTarget.y += 0.5;
+            cameraTarget.lerp(lookTarget, 0.08);
+            camera.lookAt(cameraTarget);
+        }
 
         // --------------------------------------------------------------
-        // 9. АДАПТАЦИЯ ПОД ОКНО
+        // 7. АДАПТАЦИЯ ПОД ОКНО
         // --------------------------------------------------------------
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
@@ -654,19 +473,21 @@
         });
 
         // --------------------------------------------------------------
-        // 10. АНИМАЦИОННЫЙ ЦИКЛ
+        // 8. АНИМАЦИОННЫЙ ЦИКЛ
         // --------------------------------------------------------------
         function animate() {
             requestAnimationFrame(animate);
-            moveActiveModel();
-            controls.update();
+
+            updateCar();
+            updateCamera();
+
             renderer.render(scene, camera);
         }
         animate();
 
-        console.log('🚗 3D-Гараж запущен!');
-        console.log('📖 Управление: WASD/Стрелки — перемещение модели, мышь — камера');
-        console.log('🎯 Кнопка "В центр (0, 0, 0)" ставит модель строго в центр');
+        console.log('🚗 Москвич 2141 — симулятор запущен!');
+        console.log('📍 Точка спавна:', SPAWN_POS);
+        console.log('📖 Управление: W-газ, S-тормоз, A/D-руль, Пробел-ручник');
     </script>
 </body>
 </html>
