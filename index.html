@@ -243,10 +243,10 @@
             <span class="emoji">🚗</span> Hypergolf
             <span class="credit">Free Standard</span>
         </button>
-        <button class="car-btn" data-car="dragon">
-            <span class="emoji">🐉</span> Dragon Beetle
+        <button class="car-btn" data-car="wingie">
+            <span class="emoji">🐉</span> Wingie
             <span class="flying-badge">✈️ ЛЕТАЕТ</span>
-            <span class="credit">Free Standard</span>
+            <span class="credit">© MaX3Dd · CC BY</span>
         </button>
     </div>
 
@@ -392,7 +392,7 @@
             position: new THREE.Vector3(0, 0, 0),
             velocity: new THREE.Vector3(0, 0, 0),
             rotation: 0,
-            altitude: 0, // Для летающих машин
+            altitude: 0,
         };
 
         const ENGINE_FORCE = 0.04;
@@ -400,7 +400,8 @@
         const MAX_SPEED = 0.5;
         const TURN_SPEED = 0.03;
         const FRICTION = 0.98;
-        const ALTITUDE_SPEED = 0.02; // Скорость подъёма/спуска
+        const ALTITUDE_SPEED = 0.03;
+        const FLYING_SPEED = 0.06; // Скорость полёта (легче и быстрее)
 
         const keys = {
             w: false,
@@ -414,7 +415,7 @@
             space: false,
         };
 
-        // Список моделей с описаниями и поворотами
+        // Список моделей
         const modelsList = [
             { 
                 id: 'subaru', 
@@ -473,12 +474,12 @@
                 credit: 'Free Standard'
             },
             { 
-                id: 'dragon', 
-                name: '🐉 Dragon Beetle', 
+                id: 'wingie', 
+                name: '🐉 Wingie', 
                 file: 'flyflyfly.glb', 
                 rotation: 0,
                 canFly: true,
-                credit: 'Free Standard'
+                credit: '"Low-poly Airplane" (https://skfb.ly/6U86y) by MaX3Dd is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)'
             }
         ];
 
@@ -494,7 +495,6 @@
                     (gltf) => {
                         const model = gltf.scene;
 
-                        // Масштабирование
                         const box = new THREE.Box3().setFromObject(model);
                         const size = box.getSize(new THREE.Vector3());
                         const maxDim = Math.max(size.x, size.y, size.z);
@@ -504,20 +504,16 @@
                             model.scale.set(s, s, s);
                         }
 
-                        // Центрирование
                         const center = new THREE.Vector3();
                         box.getCenter(center);
                         model.position.sub(center);
                         
-                        // Опускание на пол (нижняя точка на y = 0)
                         const newBox = new THREE.Box3().setFromObject(model);
                         const minY = newBox.min.y;
                         model.position.y = -minY;
 
-                        // Применяем поворот модели (если задан)
                         model.rotation.y = modelInfo.rotation || 0;
 
-                        // Тени
                         model.traverse((child) => {
                             if (child.isMesh) {
                                 child.castShadow = true;
@@ -607,7 +603,6 @@
                 document.getElementById('modelNameDisplay').textContent = modelInfo.name;
                 document.getElementById('creditText').textContent = modelInfo.credit;
 
-                // Показываем/скрываем высоту
                 if (modelInfo.canFly) {
                     document.getElementById('altitudeDisplay').style.display = 'block';
                     document.getElementById('controls-hint').innerHTML = 
@@ -618,7 +613,6 @@
                         '<strong>W / ↑</strong> — вперёд &nbsp;·&nbsp; <strong>S / ↓</strong> — назад &nbsp;·&nbsp; <strong>A / ←</strong> &nbsp;<strong>D / →</strong> — руль &nbsp;·&nbsp; <strong>Пробел</strong> — ручник';
                 }
 
-                // Сброс позиции в центр
                 carState.position.set(0, 0, 0);
                 carState.velocity.set(0, 0, 0);
                 carState.rotation = 0;
@@ -673,25 +667,22 @@
             let acceleration = 0;
             let turn = 0;
 
-            // Для летающих машин: W/↑ - подъём, S/↓ - спуск
             if (canFly) {
+                // Wingie — лёгкое управление
                 if (keys.w || keys.up) {
                     carState.altitude += ALTITUDE_SPEED;
                 }
                 if (keys.s || keys.down) {
                     carState.altitude -= ALTITUDE_SPEED;
                 }
-                // Ограничиваем высоту
-                carState.altitude = Math.max(0, Math.min(8, carState.altitude));
+                carState.altitude = Math.max(0.5, Math.min(10, carState.altitude));
                 
-                // Движение вперёд-назад для летающих машин (A/D для поворота)
-                if (keys.a || keys.left) turn = TURN_SPEED;
-                if (keys.d || keys.right) turn = -TURN_SPEED;
+                if (keys.a || keys.left) turn = TURN_SPEED * 1.5;
+                if (keys.d || keys.right) turn = -TURN_SPEED * 1.5;
                 
-                // Автоматическое движение вперёд для летающих машин
-                acceleration = 0.02;
+                // Автоматический полёт вперёд (быстрее и легче)
+                acceleration = FLYING_SPEED;
             } else {
-                // Обычное управление для наземных машин
                 if (keys.w || keys.up) {
                     acceleration = ENGINE_FORCE;
                 }
@@ -702,27 +693,24 @@
                 if (keys.d || keys.right) turn = -TURN_SPEED;
             }
 
-            // Поворот
             if (Math.abs(velocity.length()) > 0.005 || canFly) {
                 carState.rotation += turn;
             }
 
-            // Движение
             const forward = new THREE.Vector3(-Math.sin(rotation), 0, -Math.cos(rotation));
             
             if (canFly) {
-                // Для летающих машин - постоянное движение вперёд
                 velocity.add(forward.clone().multiplyScalar(acceleration));
-                // Трение в воздухе
-                velocity.multiplyScalar(0.995);
+                // Меньше трения в воздухе — легче управлять
+                velocity.multiplyScalar(0.997);
             } else {
                 velocity.add(forward.clone().multiplyScalar(acceleration));
             }
 
-            // Ограничиваем скорость
             const currentSpeed = velocity.length();
-            if (currentSpeed > MAX_SPEED) {
-                velocity.multiplyScalar(MAX_SPEED / currentSpeed);
+            const maxSpeed = canFly ? MAX_SPEED * 1.5 : MAX_SPEED; // Wingie быстрее
+            if (currentSpeed > maxSpeed) {
+                velocity.multiplyScalar(maxSpeed / currentSpeed);
             }
 
             if (!canFly) {
@@ -733,10 +721,8 @@
                 velocity.set(0, 0, 0);
             }
 
-            // Обновляем позицию
             position.add(velocity);
 
-            // Границы
             const BOUNDARY = 35;
             if (Math.abs(position.x) > BOUNDARY) {
                 position.x = Math.sign(position.x) * BOUNDARY;
@@ -747,13 +733,11 @@
                 velocity.z = 0;
             }
 
-            // Применяем трансформации
             currentCar.position.copy(position);
             
-            // Высота
             if (canFly) {
                 currentCar.position.y = carState.altitude;
-                // Лёгкое покачивание для летающих машин
+                // Лёгкое покачивание в воздухе
                 currentCar.rotation.z = Math.sin(Date.now() / 1000) * 0.02;
                 currentCar.rotation.x = Math.sin(Date.now() / 1500) * 0.01;
             } else {
@@ -762,11 +746,9 @@
                 currentCar.rotation.x *= 0.9;
             }
 
-            // Поворот модели
             const baseRotation = modelInfo ? modelInfo.rotation || 0 : 0;
             currentCar.rotation.y = rotation + baseRotation;
 
-            // HUD
             const speedKmh = Math.round(velocity.length() * 150);
             document.getElementById('speedDisplay').textContent = speedKmh;
 
@@ -833,7 +815,7 @@
 
         console.log('🚗 Симулятор запущен!');
         console.log('📍 Все машины в центре (0, 0, 0)');
-        console.log('🐉 Dragon Beetle умеет летать! W/↑ - подъём, S/↓ - спуск');
+        console.log('🐉 Wingie умеет летать! W/↑ - подъём, S/↓ - спуск');
         console.log('📖 Управление: W/↑-вперёд/подъём, S/↓-назад/спуск, A/←, D/→-руль, Пробел-ручник');
         console.log('🚗 8 машин с лицензиями');
     </script>
