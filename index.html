@@ -219,6 +219,10 @@
             <span class="emoji">🚗</span> Tantoya Parmezan
             <span class="credit">© Daniel Zhabotinsky · CC BY</span>
         </button>
+        <button class="car-btn" data-car="pagani">
+            <span class="emoji">🏎️</span> Pagani Sportline
+            <span class="credit">© Ajay Gawde · CC BY</span>
+        </button>
     </div>
 
     <div id="controls-hint">
@@ -416,8 +420,15 @@
                 id: 'toyota', 
                 name: '🚗 Tantoya Parmezan', 
                 file: 'toyota_tezzo.glb', 
-                rotation: Math.PI / 2, // 180° от текущего положения
+                rotation: Math.PI,
                 credit: '"Tozzo \'98 - Low poly model" (https://skfb.ly/pB6Xs) by Daniel Zhabotinsky is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)'
+            },
+            { 
+                id: 'pagani', 
+                name: '🏎️ Pagani Sportline', 
+                file: 'pagani1.glb', 
+                rotation: 0,
+                credit: '"Pagani Zonda Cinque" (https://skfb.ly/oBt9O) by Ajay Gawde is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)'
             }
         ];
 
@@ -719,7 +730,7 @@
         console.log('🚗 Симулятор запущен!');
         console.log('📍 Все машины в центре (0, 0, 0)');
         console.log('📖 Управление: W/↑-вперёд, S/↓-назад, A/←-влево, D/→-вправо, Пробел-ручник');
-        console.log('🚗 5 машин с лицензиями Creative Commons');
+        console.log('🚗 6 машин с лицензиями Creative Commons');
     </script>
 </body>
 </html>
