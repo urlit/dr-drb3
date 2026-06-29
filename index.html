@@ -392,7 +392,7 @@
             position: new THREE.Vector3(0, 0, 0),
             velocity: new THREE.Vector3(0, 0, 0),
             rotation: 0,
-            altitude: 0,
+            altitude: 1.0, // Начальная высота для Wingie
         };
 
         const ENGINE_FORCE = 0.04;
@@ -400,8 +400,8 @@
         const MAX_SPEED = 0.5;
         const TURN_SPEED = 0.03;
         const FRICTION = 0.98;
-        const ALTITUDE_SPEED = 0.03;
-        const FLYING_SPEED = 0.06; // Скорость полёта (легче и быстрее)
+        const ALTITUDE_SPEED = 0.04;
+        const FLYING_FORWARD_SPEED = 0.04; // Автоматическая скорость вперёд
 
         const keys = {
             w: false,
@@ -606,19 +606,24 @@
                 if (modelInfo.canFly) {
                     document.getElementById('altitudeDisplay').style.display = 'block';
                     document.getElementById('controls-hint').innerHTML = 
-                        '<strong>W / ↑</strong> — подъём &nbsp;·&nbsp; <strong>S / ↓</strong> — спуск &nbsp;·&nbsp; <strong>A / ←</strong> &nbsp;<strong>D / →</strong> — руль &nbsp;·&nbsp; <strong>Пробел</strong> — ручник &nbsp;🐉 ЛЕТАЕТ!';
+                        '<strong>W / ↑</strong> — подъём &nbsp;·&nbsp; <strong>S / ↓</strong> — спуск &nbsp;·&nbsp; <strong>A / ←</strong> &nbsp;<strong>D / →</strong> — поворот &nbsp;·&nbsp; 🐉 АВТОМАТИЧЕСКИЙ ПОЛЁТ!';
+                    carState.altitude = 1.0;
                 } else {
                     document.getElementById('altitudeDisplay').style.display = 'none';
                     document.getElementById('controls-hint').innerHTML = 
                         '<strong>W / ↑</strong> — вперёд &nbsp;·&nbsp; <strong>S / ↓</strong> — назад &nbsp;·&nbsp; <strong>A / ←</strong> &nbsp;<strong>D / →</strong> — руль &nbsp;·&nbsp; <strong>Пробел</strong> — ручник';
+                    carState.altitude = 0;
                 }
 
                 carState.position.set(0, 0, 0);
                 carState.velocity.set(0, 0, 0);
                 carState.rotation = 0;
-                carState.altitude = 0;
                 currentCar.position.set(0, 0, 0);
                 currentCar.rotation.y = modelInfo.rotation || 0;
+                
+                if (modelInfo.canFly) {
+                    currentCar.position.y = carState.altitude;
+                }
             });
         });
 
@@ -668,21 +673,23 @@
             let turn = 0;
 
             if (canFly) {
-                // Wingie — лёгкое управление
+                // Wingie — ВЕРТИКАЛЬНЫЙ подъём/спуск (без наклона)
                 if (keys.w || keys.up) {
                     carState.altitude += ALTITUDE_SPEED;
                 }
                 if (keys.s || keys.down) {
                     carState.altitude -= ALTITUDE_SPEED;
                 }
-                carState.altitude = Math.max(0.5, Math.min(10, carState.altitude));
+                carState.altitude = Math.max(0.5, Math.min(12, carState.altitude));
                 
-                if (keys.a || keys.left) turn = TURN_SPEED * 1.5;
-                if (keys.d || keys.right) turn = -TURN_SPEED * 1.5;
+                // Поворот (A/D или стрелки)
+                if (keys.a || keys.left) turn = TURN_SPEED * 1.8;
+                if (keys.d || keys.right) turn = -TURN_SPEED * 1.8;
                 
-                // Автоматический полёт вперёд (быстрее и легче)
-                acceleration = FLYING_SPEED;
+                // АВТОМАТИЧЕСКИЙ ПОЛЁТ ВПЕРЁД (всегда летит)
+                acceleration = FLYING_FORWARD_SPEED;
             } else {
+                // Наземные машины
                 if (keys.w || keys.up) {
                     acceleration = ENGINE_FORCE;
                 }
@@ -693,34 +700,36 @@
                 if (keys.d || keys.right) turn = -TURN_SPEED;
             }
 
+            // Поворот
             if (Math.abs(velocity.length()) > 0.005 || canFly) {
                 carState.rotation += turn;
             }
 
+            // Движение
             const forward = new THREE.Vector3(-Math.sin(rotation), 0, -Math.cos(rotation));
             
             if (canFly) {
+                // Для Wingie - постоянное движение вперёд + управление поворотами
                 velocity.add(forward.clone().multiplyScalar(acceleration));
-                // Меньше трения в воздухе — легче управлять
-                velocity.multiplyScalar(0.997);
+                // Лёгкое трение в воздухе
+                velocity.multiplyScalar(0.998);
             } else {
                 velocity.add(forward.clone().multiplyScalar(acceleration));
+                velocity.multiplyScalar(FRICTION);
             }
 
+            // Ограничиваем скорость
             const currentSpeed = velocity.length();
-            const maxSpeed = canFly ? MAX_SPEED * 1.5 : MAX_SPEED; // Wingie быстрее
+            const maxSpeed = canFly ? MAX_SPEED * 1.8 : MAX_SPEED;
             if (currentSpeed > maxSpeed) {
                 velocity.multiplyScalar(maxSpeed / currentSpeed);
-            }
-
-            if (!canFly) {
-                velocity.multiplyScalar(FRICTION);
             }
 
             if (velocity.length() < 0.001) {
                 velocity.set(0, 0, 0);
             }
 
+            // Обновляем позицию
             position.add(velocity);
 
             const BOUNDARY = 35;
@@ -733,13 +742,16 @@
                 velocity.z = 0;
             }
 
+            // Применяем трансформации
             currentCar.position.copy(position);
             
             if (canFly) {
+                // ВЕРТИКАЛЬНЫЙ подъём — только Y меняется, без наклона
                 currentCar.position.y = carState.altitude;
-                // Лёгкое покачивание в воздухе
-                currentCar.rotation.z = Math.sin(Date.now() / 1000) * 0.02;
+                // Лёгкое покачивание для красоты (без влияния на высоту)
+                currentCar.rotation.z = Math.sin(Date.now() / 1000) * 0.015;
                 currentCar.rotation.x = Math.sin(Date.now() / 1500) * 0.01;
+                // Обнуляем rotation.z при поворотах, чтобы не мешать
             } else {
                 currentCar.position.y = 0 + Math.sin(Date.now() / 500) * 0.002;
                 currentCar.rotation.z *= 0.9;
@@ -749,6 +761,7 @@
             const baseRotation = modelInfo ? modelInfo.rotation || 0 : 0;
             currentCar.rotation.y = rotation + baseRotation;
 
+            // HUD
             const speedKmh = Math.round(velocity.length() * 150);
             document.getElementById('speedDisplay').textContent = speedKmh;
 
@@ -764,8 +777,8 @@
         // --------------------------------------------------------------
         // 7. КАМЕРА ОТ ТРЕТЬЕГО ЛИЦА
         // --------------------------------------------------------------
-        const CAMERA_DISTANCE = 5;
-        const CAMERA_HEIGHT = 3;
+        const CAMERA_DISTANCE = 6;
+        const CAMERA_HEIGHT = 3.5;
         const CAMERA_SMOOTH = 0.1;
 
         let cameraTarget = new THREE.Vector3(0, 0.5, 0);
@@ -815,8 +828,8 @@
 
         console.log('🚗 Симулятор запущен!');
         console.log('📍 Все машины в центре (0, 0, 0)');
-        console.log('🐉 Wingie умеет летать! W/↑ - подъём, S/↓ - спуск');
-        console.log('📖 Управление: W/↑-вперёд/подъём, S/↓-назад/спуск, A/←, D/→-руль, Пробел-ручник');
+        console.log('🐉 Wingie летает АВТОМАТИЧЕСКИ! W/↑ - подъём, S/↓ - спуск, A/D - поворот');
+        console.log('📖 Управление: W/↑-подъём, S/↓-спуск, A/←-влево, D/→-вправо');
         console.log('🚗 8 машин с лицензиями');
     </script>
 </body>
