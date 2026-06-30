@@ -70,6 +70,15 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.4; }
         }
+        #hud .boost-charge {
+            font-size: 0.6rem;
+            color: #88ddff;
+            margin-top: 2px;
+            display: none;
+        }
+        #hud .boost-charge.active {
+            display: block;
+        }
 
         #controls-hint {
             position: absolute;
@@ -568,7 +577,7 @@
     </div>
 
     <div id="controls-hint">
-        <strong>W / ↑</strong> — вперёд &nbsp;·&nbsp; <strong>S / ↓</strong> — назад &nbsp;·&nbsp; <strong>A / ←</strong> &nbsp;<strong>D / →</strong> — руль &nbsp;·&nbsp; <strong>Пробел</strong> — ручник &nbsp;·&nbsp; <strong>Shift</strong> — буст (74→150 км/ч)
+        <strong>W / ↑</strong> — вперёд &nbsp;·&nbsp; <strong>S / ↓</strong> — назад &nbsp;·&nbsp; <strong>A / ←</strong> &nbsp;<strong>D / →</strong> — руль &nbsp;·&nbsp; <strong>Пробел</strong> — ручник &nbsp;·&nbsp; <strong style="color: #ffdd44;">Shift (1 раз)</strong> — БУСТ (74→150 км/ч)
     </div>
 
     <!-- Круглая кнопка тюнинга -->
@@ -616,6 +625,7 @@
         <div class="speed"><span id="speedDisplay">0</span> <small>км/ч</small></div>
         <div class="coords" id="coordDisplay">📍 0.00 · 0.00 · 0.00</div>
         <div class="boost-status" id="boostStatus">⚡ БУСТ АКТИВИРОВАН!</div>
+        <div class="boost-charge" id="boostCharge">🔋 Заряд буста: 100%</div>
         <div class="model-name" id="modelNameDisplay">🚗 BEEMWA 22</div>
     </div>
 
@@ -806,21 +816,25 @@
             rotation: 0,
         };
 
-        // ===== НОВЫЕ НАСТРОЙКИ: РАЗГОН ЗАМЕДЛЕН В 3 РАЗА =====
-        const ENGINE_FORCE = 0.02; // было 0.06 — в 3 раза меньше
-        const REVERSE_FORCE = 0.01; // было 0.03 — в 3 раза меньше
+        // ===== НАСТРОЙКИ =====
+        const ENGINE_FORCE = 0.02;
+        const REVERSE_FORCE = 0.01;
         const MAX_SPEED = 0.5; // ~75 км/ч
         const TURN_SPEED = 0.03;
-        const FRICTION = 0.99; // чуть больше трение для плавности
+        const FRICTION = 0.99;
         const TANK_MAX_SPEED = 0.23;
         const BOUNDARY = 315;
 
-        // Параметры для Tiramisu SRM (буст)
+        // ===== НАСТРОЙКИ БУСТА =====
         const BOOST_MAX_SPEED = 1.0; // ~150 км/ч
-        const BOOST_ENGINE_FORCE = 0.04; // буст тоже медленнее, но быстрее стандартного
-        const BOOST_THRESHOLD = 74; // км/ч для активации буста
+        const BOOST_ENGINE_FORCE = 0.06; // Ускорение во время буста
+        const BOOST_THRESHOLD = 74; // км/ч для активации
+        const BOOST_DURATION = 180; // кадров (~3 секунды при 60fps)
+        const BOOST_FADE_FRAMES = 60; // кадров для плавного затухания
 
         let boostActive = false;
+        let boostTimer = 0;
+        let boostFading = false;
         let isTiramisu = false;
 
         const CYBERTRUCK_CAMERA_DISTANCE = 8;
@@ -1094,16 +1108,20 @@
                 document.getElementById('creditText').textContent = modelInfo.credit;
                 document.getElementById('currentCarDisplay').textContent = modelInfo.name;
 
-                // Обновляем состояние буста
+                // Сброс буста
                 isTiramisu = modelInfo.hasBoost || false;
                 boostActive = false;
+                boostTimer = 0;
+                boostFading = false;
                 document.getElementById('boostStatus').classList.remove('active');
                 document.getElementById('boostStatus').style.display = 'none';
+                document.getElementById('boostCharge').classList.remove('active');
+                document.getElementById('boostCharge').style.display = 'none';
 
                 // Обновляем подсказку
                 const hint = document.getElementById('controls-hint');
                 if (isTiramisu) {
-                    hint.innerHTML = '<strong>W / ↑</strong> — вперёд &nbsp;·&nbsp; <strong>S / ↓</strong> — назад &nbsp;·&nbsp; <strong>A / ←</strong> &nbsp;<strong>D / →</strong> — руль &nbsp;·&nbsp; <strong>Пробел</strong> — ручник &nbsp;·&nbsp; <strong style="color: #ffdd44;">Shift</strong> — БУСТ (74→150 км/ч)';
+                    hint.innerHTML = '<strong>W / ↑</strong> — вперёд &nbsp;·&nbsp; <strong>S / ↓</strong> — назад &nbsp;·&nbsp; <strong>A / ←</strong> &nbsp;<strong>D / →</strong> — руль &nbsp;·&nbsp; <strong>Пробел</strong> — ручник &nbsp;·&nbsp; <strong style="color: #ffdd44;">Shift (1 раз)</strong> — БУСТ (74→150 км/ч)';
                 } else {
                     hint.innerHTML = '<strong>W / ↑</strong> — вперёд &nbsp;·&nbsp; <strong>S / ↓</strong> — назад &nbsp;·&nbsp; <strong>A / ←</strong> &nbsp;<strong>D / →</strong> — руль &nbsp;·&nbsp; <strong>Пробел</strong> — ручник';
                 }
@@ -1116,7 +1134,6 @@
                 currentCar.position.set(0, 0, 0);
                 currentCar.rotation.y = modelInfo.rotation || 0;
 
-                // Автоматически сворачиваем окно
                 if (!isCollapsed) {
                     isCollapsed = true;
                     carSelector.classList.add('collapsed');
@@ -1127,22 +1144,31 @@
         });
 
         // --------------------------------------------------------------
-        // 9. ОБРАБОТКА SHIFT ДЛЯ БУСТА (порог 74 км/ч)
+        // 9. ОБРАБОТКА SHIFT (ОДНО КРАТКОВРЕМЕННОЕ НАЖАТИЕ)
         // --------------------------------------------------------------
+        let shiftPressed = false;
+
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Shift') {
-                keys.shift = true;
                 e.preventDefault();
                 
-                if (isTiramisu) {
+                if (!shiftPressed && isTiramisu && !boostActive && !boostFading) {
                     const currentSpeed = carState.velocity.length() * 150;
                     if (currentSpeed >= BOOST_THRESHOLD) {
+                        // АКТИВИРУЕМ БУСТ
                         boostActive = true;
+                        boostTimer = BOOST_DURATION;
+                        boostFading = false;
+                        shiftPressed = true;
+                        
                         document.getElementById('boostStatus').style.display = 'block';
                         document.getElementById('boostStatus').classList.add('active');
                         document.getElementById('boostStatus').textContent = '⚡ БУСТ АКТИВИРОВАН!';
+                        document.getElementById('boostCharge').style.display = 'block';
+                        document.getElementById('boostCharge').classList.add('active');
+                        document.getElementById('boostCharge').textContent = '🔋 Заряд буста: 100%';
                     } else {
-                        // Показываем предупреждение
+                        // Предупреждение
                         document.getElementById('boostStatus').style.display = 'block';
                         document.getElementById('boostStatus').classList.remove('active');
                         document.getElementById('boostStatus').textContent = `⚠️ Разгонитесь до ${BOOST_THRESHOLD} км/ч для буста!`;
@@ -1158,12 +1184,7 @@
 
         document.addEventListener('keyup', (e) => {
             if (e.key === 'Shift') {
-                keys.shift = false;
-                if (isTiramisu) {
-                    boostActive = false;
-                    document.getElementById('boostStatus').classList.remove('active');
-                    document.getElementById('boostStatus').style.display = 'none';
-                }
+                shiftPressed = false;
             }
         });
 
@@ -1362,7 +1383,7 @@
         });
 
         // --------------------------------------------------------------
-        // 12. УПРАВЛЕНИЕ (с бустом для Tiramisu)
+        // 12. УПРАВЛЕНИЕ (с автоматическим бустом)
         // --------------------------------------------------------------
         document.addEventListener('keydown', (e) => {
             const key = e.key;
@@ -1407,21 +1428,52 @@
             let acceleration = 0;
             let turn = 0;
 
-            // Выбор силы двигателя (с бустом или без)
-            let currentEngineForce = ENGINE_FORCE;
-            let currentMaxSpeed = MAX_SPEED;
-
+            // --- ЛОГИКА БУСТА ---
             if (hasBoost && boostActive) {
-                currentEngineForce = BOOST_ENGINE_FORCE;
-                currentMaxSpeed = BOOST_MAX_SPEED;
+                boostTimer--;
+                
+                // Рассчитываем процент заряда
+                let chargePercent = 100;
+                let currentEngineForce = BOOST_ENGINE_FORCE;
+                let currentMaxSpeed = BOOST_MAX_SPEED;
+                
+                if (boostTimer <= BOOST_FADE_FRAMES && boostTimer > 0) {
+                    // Фаза затухания
+                    const fadeProgress = 1 - (boostTimer / BOOST_FADE_FRAMES);
+                    currentEngineForce = BOOST_ENGINE_FORCE * (1 - fadeProgress * 0.7);
+                    currentMaxSpeed = BOOST_MAX_SPEED * (1 - fadeProgress * 0.5);
+                    chargePercent = Math.round((boostTimer / BOOST_DURATION) * 100);
+                    boostFading = true;
+                } else if (boostTimer > BOOST_FADE_FRAMES) {
+                    chargePercent = Math.round((boostTimer / BOOST_DURATION) * 100);
+                }
+                
+                // Обновляем индикатор заряда
+                document.getElementById('boostCharge').textContent = `🔋 Заряд буста: ${chargePercent}%`;
+                
+                // Автоматическое ускорение (без необходимости держать W)
+                acceleration = currentEngineForce;
+                
+                // Если буст закончился
+                if (boostTimer <= 0) {
+                    boostActive = false;
+                    boostFading = false;
+                    document.getElementById('boostStatus').classList.remove('active');
+                    document.getElementById('boostStatus').style.display = 'none';
+                    document.getElementById('boostCharge').classList.remove('active');
+                    document.getElementById('boostCharge').style.display = 'none';
+                }
+            } else {
+                // Обычное управление
+                if (keys.w || keys.up) {
+                    acceleration = ENGINE_FORCE;
+                }
+                if (keys.s || keys.down) {
+                    acceleration = -REVERSE_FORCE;
+                }
             }
 
-            if (keys.w || keys.up) {
-                acceleration = currentEngineForce;
-            }
-            if (keys.s || keys.down) {
-                acceleration = -REVERSE_FORCE;
-            }
+            // Повороты (всегда работают)
             if (keys.a || keys.left) turn = TURN_SPEED;
             if (keys.d || keys.right) turn = -TURN_SPEED;
 
@@ -1430,10 +1482,17 @@
             }
 
             const forward = new THREE.Vector3(-Math.sin(rotation), 0, -Math.cos(rotation));
-            velocity.add(forward.clone().multiplyScalar(acceleration));
+            
+            // Если буст активен — ускорение применяется автоматически
+            if (hasBoost && boostActive) {
+                // Ускорение уже задано выше
+                velocity.add(forward.clone().multiplyScalar(acceleration));
+            } else {
+                velocity.add(forward.clone().multiplyScalar(acceleration));
+            }
 
             const currentSpeed = velocity.length();
-            const maxSpeed = isTank ? TANK_MAX_SPEED : currentMaxSpeed;
+            const maxSpeed = isTank ? TANK_MAX_SPEED : (hasBoost && boostActive ? BOOST_MAX_SPEED : MAX_SPEED);
             if (currentSpeed > maxSpeed) {
                 velocity.multiplyScalar(maxSpeed / currentSpeed);
             }
@@ -1475,11 +1534,14 @@
             document.getElementById('coordDisplay').textContent =
                 `📍 ${position.x.toFixed(2)} · ${position.y.toFixed(2)} · ${position.z.toFixed(2)}`;
 
-            // Автоматическое отключение буста если скорость упала ниже 74
-            if (hasBoost && boostActive && speedKmh < BOOST_THRESHOLD) {
+            // Автоматическое отключение буста если скорость упала ниже 74 (защита)
+            if (hasBoost && boostActive && speedKmh < BOOST_THRESHOLD && boostTimer < BOOST_DURATION - 10) {
                 boostActive = false;
+                boostFading = false;
                 document.getElementById('boostStatus').classList.remove('active');
                 document.getElementById('boostStatus').style.display = 'none';
+                document.getElementById('boostCharge').classList.remove('active');
+                document.getElementById('boostCharge').style.display = 'none';
             }
         }
 
@@ -1554,13 +1616,12 @@
         console.log('🚗 Симулятор запущен!');
         console.log('📍 Поле увеличено в 9 раз (720×720), спавн в центре (0, 0, 0)');
         console.log('🍰 Tiramisu SRM добавлена!');
-        console.log(`⚡ Для Tiramisu: разгонитесь до ${BOOST_THRESHOLD} км/ч и нажмите Shift для буста до 150 км/ч!`);
+        console.log(`⚡ Нажмите Shift 1 раз при скорости ${BOOST_THRESHOLD}+ км/ч — машина автоматически разгонится до 150 км/ч!`);
         console.log('🐢 Разгон всех машин замедлен в 3 раза для реалистичности');
         console.log('🚛 Telsa Cibertruck увеличен в 2 раза!');
         console.log('🎖️ TTTank разблокируется по промокоду "thetank"');
         console.log('🎨 Нажмите круглую кнопку 🎨 для тюнинга!');
         console.log('📋 Кликните на заголовок "МАШИНЫ" чтобы свернуть/развернуть окно');
-        console.log('📖 Управление: W/↑-вперёд, S/↓-назад, A/←-влево, D/→-вправо, Пробел-ручник');
     </script>
 </body>
 </html>
