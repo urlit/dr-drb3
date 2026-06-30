@@ -448,7 +448,6 @@
                     '<span class="emoji">🎖️</span> TTTank' +
                     '<span class="credit">© Kolos Studios · CC BY</span>';
                 document.getElementById('tankBtn').dataset.unlocked = 'true';
-                // Активируем кнопку танка
                 document.querySelectorAll('.car-btn').forEach(b => b.style.opacity = '1');
                 alert('🎖️ TTTank разблокирован!');
             } else {
@@ -461,7 +460,6 @@
             document.getElementById('promoPanel').style.display = 'none';
         });
 
-        // Показываем промо при загрузке
         setTimeout(() => {
             document.getElementById('promoPanel').style.display = 'block';
         }, 1000);
@@ -483,13 +481,12 @@
             rotation: 0,
         };
 
-        // МЕДЛЕННЫЙ РАЗГОН
         const ENGINE_FORCE = 0.025;
         const REVERSE_FORCE = 0.015;
         const MAX_SPEED = 0.5;
         const TURN_SPEED = 0.03;
         const FRICTION = 0.98;
-        const TANK_MAX_SPEED = 0.23; // ~35 км/ч
+        const TANK_MAX_SPEED = 0.23;
 
         const keys = {
             w: false,
@@ -503,7 +500,7 @@
             space: false,
         };
 
-        // Список моделей
+        // Список моделей — BEEMWA 30 и TTTank развёрнуты на 180°
         const modelsList = [
             { 
                 id: 'bmw', 
@@ -516,7 +513,7 @@
                 id: 'bmw30', 
                 name: '🚗 BEEMWA 30', 
                 file: 'BEEMWAPP3.glb', 
-                rotation: -Math.PI / 2,
+                rotation: Math.PI, // 180°
                 credit: '"Low Poly Car - BMW E30 1985 White" (https://skfb.ly/o8EBR) by ROH3D is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)'
             },
             { 
@@ -558,7 +555,7 @@
                 id: 'tank', 
                 name: '🎖️ TTTank', 
                 file: 'low_poly_tank.glb', 
-                rotation: -Math.PI / 2,
+                rotation: Math.PI, // 180°
                 credit: '"Low Poly Tank" (https://skfb.ly/6YNSy) by Kolos Studios is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)',
                 isTank: true
             }
@@ -623,7 +620,6 @@
 
         async function init() {
             try {
-                // Загружаем все модели кроме танка (он загружается отдельно)
                 const modelsToLoad = modelsList.filter(m => m.id !== 'tank');
                 
                 for (const model of modelsToLoad) {
@@ -668,7 +664,6 @@
         // --------------------------------------------------------------
         async function loadTank() {
             try {
-                const tankInfo = modelsList.find(m => m.id === 'tank');
                 const modelObj = await loadModel('tank', 'low_poly_tank.glb');
                 loadedModels['tank'] = modelObj;
                 modelObj.visible = false;
@@ -678,7 +673,6 @@
             }
         }
 
-        // Загружаем танк в фоне
         loadTank();
 
         // --------------------------------------------------------------
@@ -688,7 +682,6 @@
             btn.addEventListener('click', () => {
                 const id = btn.dataset.car;
                 
-                // Проверка на танк
                 if (id === 'tank' && !tankUnlocked) {
                     document.getElementById('promoPanel').style.display = 'block';
                     return;
@@ -781,7 +774,6 @@
             velocity.add(forward.clone().multiplyScalar(acceleration));
 
             const currentSpeed = velocity.length();
-            // Ограничение скорости для танка
             const maxSpeed = isTank ? TANK_MAX_SPEED : MAX_SPEED;
             if (currentSpeed > maxSpeed) {
                 velocity.multiplyScalar(maxSpeed / currentSpeed);
@@ -819,7 +811,6 @@
 
             currentCar.position.y = 0 + Math.sin(Date.now() / 500) * 0.002;
 
-            // Скорость в км/ч (для танка ограничена)
             const speedKmh = Math.round(velocity.length() * 150);
             document.getElementById('speedDisplay').textContent = speedKmh;
 
@@ -828,7 +819,7 @@
         }
 
         // --------------------------------------------------------------
-        // 9. КАМЕРА ОТ ТРЕТЬЕГО ЛИЦА (улучшенная)
+        // 9. КАМЕРА ОТ ТРЕТЬЕГО ЛИЦА
         // --------------------------------------------------------------
         const CAMERA_DISTANCE_MIN = 4.5;
         const CAMERA_DISTANCE_MAX = 6.5;
@@ -842,7 +833,6 @@
 
             const carPos = currentCar.position.clone();
             
-            // Динамическое расстояние в зависимости от скорости (но не слишком сильное)
             const speed = carState.velocity.length();
             const distanceFactor = Math.min(speed / MAX_SPEED, 1);
             const currentDistance = CAMERA_DISTANCE_MIN + (CAMERA_DISTANCE_MAX - CAMERA_DISTANCE_MIN) * distanceFactor * 0.5;
@@ -857,7 +847,6 @@
             const desiredPos = carPos.clone().add(offset);
             camera.position.lerp(desiredPos, CAMERA_SMOOTH);
 
-            // Всегда смотрим на машину (она в центре кадра)
             const lookTarget = carPos.clone();
             lookTarget.y += 0.5;
             cameraTarget.lerp(lookTarget, CAMERA_SMOOTH);
@@ -889,8 +878,8 @@
         console.log('🚗 Симулятор запущен!');
         console.log('📍 Все машины в центре (0, 0, 0)');
         console.log('🎖️ TTTank разблокируется по промокоду "thetank"');
+        console.log('🔄 BEEMWA 30 и TTTank развёрнуты на 180°');
         console.log('📖 Управление: W/↑-вперёд, S/↓-назад, A/←-влево, D/→-вправо, Пробел-ручник');
-        console.log('🚗 8 машин с лицензиями');
     </script>
 </body>
 </html>
