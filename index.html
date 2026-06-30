@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Городской симулятор</title>
+    <title>Городской симулятор — Тюнинг</title>
     <style>
         * {
             margin: 0;
@@ -221,9 +221,156 @@
             margin-left: 6px;
         }
 
-        #creditPanel {
+        /* ===== ПАНЕЛЬ ТЮНИНГА ===== */
+        #tuningPanel {
             position: absolute;
             bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 12;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(12px);
+            padding: 16px 24px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: none;
+            min-width: 320px;
+            max-width: 500px;
+            text-align: center;
+            gap: 12px;
+            flex-direction: column;
+        }
+        #tuningPanel h4 {
+            color: #ff6b35;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+        }
+        #tuningPanel .tuning-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            align-items: center;
+        }
+        #tuningPanel .tuning-row label {
+            color: #aaa;
+            font-size: 0.75rem;
+        }
+        #tuningPanel input[type="color"] {
+            width: 40px;
+            height: 40px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            cursor: pointer;
+            background: none;
+            padding: 2px;
+        }
+        #tuningPanel input[type="color"]:hover {
+            border-color: #ff6b35;
+        }
+        #tuningPanel .tuning-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        #tuningPanel .tuning-btn:hover {
+            background: rgba(255, 107, 53, 0.2);
+            border-color: #ff6b35;
+        }
+        #tuningPanel .tuning-btn.primary {
+            background: #ff6b35;
+            border-color: #ff6b35;
+            font-weight: 500;
+        }
+        #tuningPanel .tuning-btn.primary:hover {
+            background: #ff7a4a;
+        }
+        #tuningPanel .close-tuning {
+            position: absolute;
+            top: 4px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+        #tuningPanel .close-tuning:hover {
+            color: #fff;
+        }
+        #tuningPanel .sticker-presets {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            justify-content: center;
+        }
+        #tuningPanel .sticker-presets .sticker-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 0.7rem;
+            color: #ccc;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        #tuningPanel .sticker-presets .sticker-btn:hover {
+            background: rgba(255, 107, 53, 0.2);
+            border-color: #ff6b35;
+            color: #fff;
+        }
+        #tuningPanel .sticker-presets .sticker-btn.active {
+            background: rgba(255, 107, 53, 0.3);
+            border-color: #ff6b35;
+            color: #fff;
+        }
+        #tuningPanel .file-input-wrapper {
+            display: inline-block;
+            position: relative;
+            overflow: hidden;
+        }
+        #tuningPanel .file-input-wrapper input[type="file"] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        #tuningToggle {
+            position: absolute;
+            bottom: 90px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 11;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(6px);
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            color: #aaa;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            pointer-events: auto;
+            user-select: none;
+        }
+        #tuningToggle:hover {
+            background: rgba(255, 107, 53, 0.2);
+            border-color: #ff6b35;
+            color: #fff;
+        }
+
+        #creditPanel {
+            position: absolute;
+            bottom: 135px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 10;
@@ -255,6 +402,8 @@
             #creditPanel { bottom: 80px; font-size: 0.5rem; padding: 4px 12px; }
             #promoPanel { top: 70px; padding: 12px 16px; width: 90%; }
             #promoPanel input { width: 140px; font-size: 0.85rem; }
+            #tuningPanel { bottom: 80px; min-width: 90%; padding: 12px 16px; }
+            #tuningToggle { bottom: 70px; font-size: 0.6rem; padding: 4px 12px; }
         }
     </style>
 </head>
@@ -308,6 +457,42 @@
 
     <div id="controls-hint">
         <strong>W / ↑</strong> — вперёд &nbsp;·&nbsp; <strong>S / ↓</strong> — назад &nbsp;·&nbsp; <strong>A / ←</strong> &nbsp;<strong>D / →</strong> — руль &nbsp;·&nbsp; <strong>Пробел</strong> — ручник
+    </div>
+
+    <!-- Кнопка открытия тюнинга -->
+    <div id="tuningToggle">🎨 Тюнинг</div>
+
+    <!-- Панель тюнинга -->
+    <div id="tuningPanel">
+        <button class="close-tuning" id="closeTuning">✕</button>
+        <h4>🎨 ТЮНИНГ</h4>
+        
+        <div class="tuning-row">
+            <label>🎨 Цвет:</label>
+            <input type="color" id="colorPicker" value="#ff6b35" />
+            <button class="tuning-btn" id="applyColorBtn">Применить</button>
+            <button class="tuning-btn" id="resetColorBtn">Сбросить</button>
+        </div>
+
+        <div class="tuning-row">
+            <label>🖼️ Стикеры:</label>
+            <div class="sticker-presets">
+                <button class="sticker-btn" data-sticker="🔥">🔥 Огонь</button>
+                <button class="sticker-btn" data-sticker="⭐">⭐ Звезда</button>
+                <button class="sticker-btn" data-sticker="🏁">🏁 Гоночный</button>
+                <button class="sticker-btn" data-sticker="💀">💀 Череп</button>
+                <button class="sticker-btn" data-sticker="🌈">🌈 Радуга</button>
+                <button class="sticker-btn" data-sticker="clear">❌ Убрать</button>
+            </div>
+        </div>
+
+        <div class="tuning-row">
+            <label>📁 Своё изображение:</label>
+            <div class="file-input-wrapper">
+                <button class="tuning-btn primary">Выбрать файл</button>
+                <input type="file" id="stickerFileInput" accept="image/*" />
+            </div>
+        </div>
     </div>
 
     <div id="creditPanel">
@@ -474,6 +659,7 @@
         let currentCar = null;
         let carLoaded = false;
         let currentModelId = 'bmw';
+        let originalMaterials = new Map(); // Для сброса цвета
 
         const carState = {
             position: new THREE.Vector3(0, 0, 0),
@@ -500,7 +686,6 @@
             space: false,
         };
 
-        // Список моделей — BEEMWA 30 и TTTank развёрнуты на 180°
         const modelsList = [
             { 
                 id: 'bmw', 
@@ -513,7 +698,7 @@
                 id: 'bmw30', 
                 name: '🚗 BEEMWA 30', 
                 file: 'BEEMWAPP3.glb', 
-                rotation: Math.PI, // 180°
+                rotation: Math.PI,
                 credit: '"Low Poly Car - BMW E30 1985 White" (https://skfb.ly/o8EBR) by ROH3D is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)'
             },
             { 
@@ -555,7 +740,7 @@
                 id: 'tank', 
                 name: '🎖️ TTTank', 
                 file: 'low_poly_tank.glb', 
-                rotation: Math.PI, // 180°
+                rotation: Math.PI,
                 credit: '"Low Poly Tank" (https://skfb.ly/6YNSy) by Kolos Studios is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)',
                 isTank: true
             }
@@ -704,6 +889,9 @@
                 document.getElementById('modelNameDisplay').textContent = modelInfo.name;
                 document.getElementById('creditText').textContent = modelInfo.credit;
 
+                // Сбрасываем тюнинг при смене машины
+                originalMaterials.clear();
+
                 carState.position.set(0, 0, 0);
                 carState.velocity.set(0, 0, 0);
                 carState.rotation = 0;
@@ -713,7 +901,217 @@
         });
 
         // --------------------------------------------------------------
-        // 8. УПРАВЛЕНИЕ
+        // 8. ТЮНИНГ
+        // --------------------------------------------------------------
+        const tuningPanel = document.getElementById('tuningPanel');
+        const tuningToggle = document.getElementById('tuningToggle');
+        const closeTuningBtn = document.getElementById('closeTuning');
+        const colorPicker = document.getElementById('colorPicker');
+        const applyColorBtn = document.getElementById('applyColorBtn');
+        const resetColorBtn = document.getElementById('resetColorBtn');
+
+        tuningToggle.addEventListener('click', () => {
+            tuningPanel.style.display = tuningPanel.style.display === 'flex' ? 'none' : 'flex';
+        });
+
+        closeTuningBtn.addEventListener('click', () => {
+            tuningPanel.style.display = 'none';
+        });
+
+        // Сохраняем оригинальные материалы
+        function saveOriginalMaterials(model) {
+            if (!model) return;
+            model.traverse((child) => {
+                if (child.isMesh && child.material) {
+                    const key = child.uuid;
+                    if (!originalMaterials.has(key)) {
+                        originalMaterials.set(key, child.material.clone());
+                    }
+                }
+            });
+        }
+
+        // Применение цвета
+        applyColorBtn.addEventListener('click', () => {
+            if (!currentCar) return;
+            const color = new THREE.Color(colorPicker.value);
+            
+            currentCar.traverse((child) => {
+                if (child.isMesh && child.material) {
+                    // Сохраняем оригинал, если ещё не сохранён
+                    const key = child.uuid;
+                    if (!originalMaterials.has(key)) {
+                        originalMaterials.set(key, child.material.clone());
+                    }
+                    // Применяем цвет
+                    const mat = child.material;
+                    if (Array.isArray(mat)) {
+                        mat.forEach(m => {
+                            m.color.copy(color);
+                            m.emissive = new THREE.Color(0x000000);
+                        });
+                    } else {
+                        mat.color.copy(color);
+                        mat.emissive = new THREE.Color(0x000000);
+                    }
+                }
+            });
+        });
+
+        // Сброс цвета
+        resetColorBtn.addEventListener('click', () => {
+            if (!currentCar) return;
+            currentCar.traverse((child) => {
+                if (child.isMesh && child.material) {
+                    const key = child.uuid;
+                    if (originalMaterials.has(key)) {
+                        const orig = originalMaterials.get(key);
+                        const mat = child.material;
+                        if (Array.isArray(mat)) {
+                            mat.forEach((m, i) => {
+                                if (orig[i]) {
+                                    m.color.copy(orig[i].color);
+                                    m.emissive.copy(orig[i].emissive);
+                                    m.map = orig[i].map;
+                                }
+                            });
+                        } else {
+                            mat.color.copy(orig.color);
+                            mat.emissive.copy(orig.emissive);
+                            mat.map = orig.map;
+                        }
+                        child.material.needsUpdate = true;
+                    }
+                }
+            });
+        });
+
+        // --------------------------------------------------------------
+        // 9. СТИКЕРЫ
+        // --------------------------------------------------------------
+        const stickerTextures = {};
+
+        // Создаём текстуру со стикером
+        function createStickerTexture(text, bgColor = '#ff6b35', textColor = '#ffffff') {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            
+            // Фон
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(0, 0, 256, 256);
+            
+            // Рамка
+            ctx.strokeStyle = textColor;
+            ctx.lineWidth = 4;
+            ctx.strokeRect(10, 10, 236, 236);
+            
+            // Текст
+            ctx.fillStyle = textColor;
+            ctx.font = 'bold 80px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, 128, 130);
+            
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        // Стикеры
+        const stickerPresets = {
+            '🔥': { bg: '#ff4400', text: '🔥' },
+            '⭐': { bg: '#ffd700', text: '⭐' },
+            '🏁': { bg: '#222222', text: '🏁' },
+            '💀': { bg: '#1a1a2e', text: '💀' },
+            '🌈': { bg: '#ff6b6b', text: '🌈' },
+        };
+
+        // Применить стикер
+        function applySticker(text) {
+            if (!currentCar) return;
+            
+            if (text === 'clear') {
+                // Убираем стикер
+                resetColorBtn.click();
+                return;
+            }
+            
+            const preset = stickerPresets[text];
+            if (!preset) return;
+            
+            const texture = createStickerTexture(text, preset.bg, '#ffffff');
+            
+            currentCar.traverse((child) => {
+                if (child.isMesh && child.material) {
+                    const key = child.uuid;
+                    if (!originalMaterials.has(key)) {
+                        originalMaterials.set(key, child.material.clone());
+                    }
+                    const mat = child.material;
+                    if (Array.isArray(mat)) {
+                        mat.forEach(m => {
+                            m.map = texture;
+                            m.needsUpdate = true;
+                        });
+                    } else {
+                        mat.map = texture;
+                        mat.needsUpdate = true;
+                    }
+                }
+            });
+        }
+
+        // Обработчики кнопок стикеров
+        document.querySelectorAll('.sticker-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const sticker = btn.dataset.sticker;
+                applySticker(sticker);
+                
+                document.querySelectorAll('.sticker-btn').forEach(b => b.classList.remove('active'));
+                if (sticker !== 'clear') {
+                    btn.classList.add('active');
+                }
+            });
+        });
+
+        // Загрузка своего изображения
+        document.getElementById('stickerFileInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    const texture = new THREE.Texture(img);
+                    texture.needsUpdate = true;
+                    
+                    currentCar.traverse((child) => {
+                        if (child.isMesh && child.material) {
+                            const key = child.uuid;
+                            if (!originalMaterials.has(key)) {
+                                originalMaterials.set(key, child.material.clone());
+                            }
+                            const mat = child.material;
+                            if (Array.isArray(mat)) {
+                                mat.forEach(m => {
+                                    m.map = texture;
+                                    m.needsUpdate = true;
+                                });
+                            } else {
+                                mat.map = texture;
+                                mat.needsUpdate = true;
+                            }
+                        }
+                    });
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // --------------------------------------------------------------
+        // 10. УПРАВЛЕНИЕ
         // --------------------------------------------------------------
         document.addEventListener('keydown', (e) => {
             const key = e.key;
@@ -819,7 +1217,7 @@
         }
 
         // --------------------------------------------------------------
-        // 9. КАМЕРА ОТ ТРЕТЬЕГО ЛИЦА
+        // 11. КАМЕРА ОТ ТРЕТЬЕГО ЛИЦА
         // --------------------------------------------------------------
         const CAMERA_DISTANCE_MIN = 4.5;
         const CAMERA_DISTANCE_MAX = 6.5;
@@ -854,7 +1252,7 @@
         }
 
         // --------------------------------------------------------------
-        // 10. АДАПТАЦИЯ ПОД ОКНО
+        // 12. АДАПТАЦИЯ ПОД ОКНО
         // --------------------------------------------------------------
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
@@ -863,7 +1261,7 @@
         });
 
         // --------------------------------------------------------------
-        // 11. АНИМАЦИОННЫЙ ЦИКЛ
+        // 13. АНИМАЦИОННЫЙ ЦИКЛ
         // --------------------------------------------------------------
         function animate() {
             requestAnimationFrame(animate);
@@ -878,7 +1276,7 @@
         console.log('🚗 Симулятор запущен!');
         console.log('📍 Все машины в центре (0, 0, 0)');
         console.log('🎖️ TTTank разблокируется по промокоду "thetank"');
-        console.log('🔄 BEEMWA 30 и TTTank развёрнуты на 180°');
+        console.log('🎨 Нажмите кнопку "Тюнинг" для изменения цвета и наклейки стикеров!');
         console.log('📖 Управление: W/↑-вперёд, S/↓-назад, A/←-влево, D/→-вправо, Пробел-ручник');
     </script>
 </body>
