@@ -806,17 +806,18 @@
             rotation: 0,
         };
 
-        const ENGINE_FORCE = 0.025;
-        const REVERSE_FORCE = 0.015;
+        // ===== УВЕЛИЧЕННАЯ СИЛА ДЛЯ РАЗГОНА ДО 75 КМ/Ч =====
+        const ENGINE_FORCE = 0.06; // было 0.025 — теперь машины быстрее разгоняются
+        const REVERSE_FORCE = 0.03;
         const MAX_SPEED = 0.5; // ~75 км/ч
         const TURN_SPEED = 0.03;
-        const FRICTION = 0.98;
+        const FRICTION = 0.985; // чуть меньше трения для лучшего разгона
         const TANK_MAX_SPEED = 0.23;
         const BOUNDARY = 315;
 
         // Параметры для Tiramisu SRM (буст)
         const BOOST_MAX_SPEED = 1.0; // ~150 км/ч
-        const BOOST_ENGINE_FORCE = 0.05;
+        const BOOST_ENGINE_FORCE = 0.08;
         let boostActive = false;
         let isTiramisu = false;
 
