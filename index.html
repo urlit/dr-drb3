@@ -568,7 +568,7 @@
     </div>
 
     <div id="controls-hint">
-        <strong>W / ↑</strong> — вперёд &nbsp;·&nbsp; <strong>S / ↓</strong> — назад &nbsp;·&nbsp; <strong>A / ←</strong> &nbsp;<strong>D / →</strong> — руль &nbsp;·&nbsp; <strong>Пробел</strong> — ручник &nbsp;·&nbsp; <strong>Shift</strong> — буст (Tiramisu)
+        <strong>W / ↑</strong> — вперёд &nbsp;·&nbsp; <strong>S / ↓</strong> — назад &nbsp;·&nbsp; <strong>A / ←</strong> &nbsp;<strong>D / →</strong> — руль &nbsp;·&nbsp; <strong>Пробел</strong> — ручник &nbsp;·&nbsp; <strong>Shift</strong> — буст (74→150 км/ч)
     </div>
 
     <!-- Круглая кнопка тюнинга -->
@@ -806,18 +806,20 @@
             rotation: 0,
         };
 
-        // ===== УВЕЛИЧЕННАЯ СИЛА ДЛЯ РАЗГОНА ДО 75 КМ/Ч =====
-        const ENGINE_FORCE = 0.06; // было 0.025 — теперь машины быстрее разгоняются
-        const REVERSE_FORCE = 0.03;
+        // ===== НОВЫЕ НАСТРОЙКИ: РАЗГОН ЗАМЕДЛЕН В 3 РАЗА =====
+        const ENGINE_FORCE = 0.02; // было 0.06 — в 3 раза меньше
+        const REVERSE_FORCE = 0.01; // было 0.03 — в 3 раза меньше
         const MAX_SPEED = 0.5; // ~75 км/ч
         const TURN_SPEED = 0.03;
-        const FRICTION = 0.985; // чуть меньше трения для лучшего разгона
+        const FRICTION = 0.99; // чуть больше трение для плавности
         const TANK_MAX_SPEED = 0.23;
         const BOUNDARY = 315;
 
         // Параметры для Tiramisu SRM (буст)
         const BOOST_MAX_SPEED = 1.0; // ~150 км/ч
-        const BOOST_ENGINE_FORCE = 0.08;
+        const BOOST_ENGINE_FORCE = 0.04; // буст тоже медленнее, но быстрее стандартного
+        const BOOST_THRESHOLD = 74; // км/ч для активации буста
+
         let boostActive = false;
         let isTiramisu = false;
 
@@ -1101,7 +1103,7 @@
                 // Обновляем подсказку
                 const hint = document.getElementById('controls-hint');
                 if (isTiramisu) {
-                    hint.innerHTML = '<strong>W / ↑</strong> — вперёд &nbsp;·&nbsp; <strong>S / ↓</strong> — назад &nbsp;·&nbsp; <strong>A / ←</strong> &nbsp;<strong>D / →</strong> — руль &nbsp;·&nbsp; <strong>Пробел</strong> — ручник &nbsp;·&nbsp; <strong style="color: #ffdd44;">Shift</strong> — БУСТ (75→150 км/ч)';
+                    hint.innerHTML = '<strong>W / ↑</strong> — вперёд &nbsp;·&nbsp; <strong>S / ↓</strong> — назад &nbsp;·&nbsp; <strong>A / ←</strong> &nbsp;<strong>D / →</strong> — руль &nbsp;·&nbsp; <strong>Пробел</strong> — ручник &nbsp;·&nbsp; <strong style="color: #ffdd44;">Shift</strong> — БУСТ (74→150 км/ч)';
                 } else {
                     hint.innerHTML = '<strong>W / ↑</strong> — вперёд &nbsp;·&nbsp; <strong>S / ↓</strong> — назад &nbsp;·&nbsp; <strong>A / ←</strong> &nbsp;<strong>D / →</strong> — руль &nbsp;·&nbsp; <strong>Пробел</strong> — ручник';
                 }
@@ -1125,7 +1127,7 @@
         });
 
         // --------------------------------------------------------------
-        // 9. ОБРАБОТКА SHIFT ДЛЯ БУСТА
+        // 9. ОБРАБОТКА SHIFT ДЛЯ БУСТА (порог 74 км/ч)
         // --------------------------------------------------------------
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Shift') {
@@ -1134,7 +1136,7 @@
                 
                 if (isTiramisu) {
                     const currentSpeed = carState.velocity.length() * 150;
-                    if (currentSpeed >= 75) {
+                    if (currentSpeed >= BOOST_THRESHOLD) {
                         boostActive = true;
                         document.getElementById('boostStatus').style.display = 'block';
                         document.getElementById('boostStatus').classList.add('active');
@@ -1143,7 +1145,7 @@
                         // Показываем предупреждение
                         document.getElementById('boostStatus').style.display = 'block';
                         document.getElementById('boostStatus').classList.remove('active');
-                        document.getElementById('boostStatus').textContent = '⚠️ Разгонитесь до 75 км/ч для буста!';
+                        document.getElementById('boostStatus').textContent = `⚠️ Разгонитесь до ${BOOST_THRESHOLD} км/ч для буста!`;
                         setTimeout(() => {
                             if (!boostActive) {
                                 document.getElementById('boostStatus').style.display = 'none';
@@ -1473,8 +1475,8 @@
             document.getElementById('coordDisplay').textContent =
                 `📍 ${position.x.toFixed(2)} · ${position.y.toFixed(2)} · ${position.z.toFixed(2)}`;
 
-            // Автоматическое отключение буста если скорость упала ниже 75
-            if (hasBoost && boostActive && speedKmh < 75) {
+            // Автоматическое отключение буста если скорость упала ниже 74
+            if (hasBoost && boostActive && speedKmh < BOOST_THRESHOLD) {
                 boostActive = false;
                 document.getElementById('boostStatus').classList.remove('active');
                 document.getElementById('boostStatus').style.display = 'none';
@@ -1552,7 +1554,8 @@
         console.log('🚗 Симулятор запущен!');
         console.log('📍 Поле увеличено в 9 раз (720×720), спавн в центре (0, 0, 0)');
         console.log('🍰 Tiramisu SRM добавлена!');
-        console.log('⚡ Для Tiramisu: разгонитесь до 75 км/ч и нажмите Shift для буста до 150 км/ч!');
+        console.log(`⚡ Для Tiramisu: разгонитесь до ${BOOST_THRESHOLD} км/ч и нажмите Shift для буста до 150 км/ч!`);
+        console.log('🐢 Разгон всех машин замедлен в 3 раза для реалистичности');
         console.log('🚛 Telsa Cibertruck увеличен в 2 раза!');
         console.log('🎖️ TTTank разблокируется по промокоду "thetank"');
         console.log('🎨 Нажмите круглую кнопку 🎨 для тюнинга!');
