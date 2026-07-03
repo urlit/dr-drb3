@@ -276,7 +276,7 @@
             margin-left: 6px;
         }
 
-        /* ===== ПАНЕЛЬ ТЮНИНГА ===== */
+        /* ===== ПАНЕЛЬ ТЮНИНГА (увеличенная) ===== */
         #tuningPanel {
             position: absolute;
             bottom: 100px;
@@ -285,35 +285,35 @@
             z-index: 12;
             background: rgba(0, 0, 0, 0.85);
             backdrop-filter: blur(12px);
-            padding: 16px 24px;
-            border-radius: 16px;
+            padding: 20px 28px;
+            border-radius: 18px;
             border: 1px solid rgba(255, 255, 255, 0.1);
             display: none;
-            min-width: 320px;
-            max-width: 500px;
+            min-width: 420px;
+            max-width: 560px;
             text-align: center;
-            gap: 12px;
+            gap: 14px;
             flex-direction: column;
         }
         #tuningPanel h4 {
             color: #ff6b35;
-            font-size: 0.9rem;
+            font-size: 1rem;
             letter-spacing: 0.5px;
         }
         #tuningPanel .tuning-row {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 10px;
             justify-content: center;
             align-items: center;
         }
         #tuningPanel .tuning-row label {
             color: #aaa;
-            font-size: 0.75rem;
+            font-size: 0.8rem;
         }
         #tuningPanel input[type="color"] {
-            width: 40px;
-            height: 40px;
+            width: 44px;
+            height: 44px;
             border: 2px solid rgba(255, 255, 255, 0.2);
             border-radius: 8px;
             cursor: pointer;
@@ -327,9 +327,9 @@
             background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.1);
             color: #fff;
-            padding: 6px 14px;
+            padding: 8px 16px;
             border-radius: 8px;
-            font-size: 0.75rem;
+            font-size: 0.8rem;
             cursor: pointer;
             transition: all 0.3s;
         }
@@ -347,12 +347,12 @@
         }
         #tuningPanel .close-tuning {
             position: absolute;
-            top: 4px;
-            right: 10px;
+            top: 6px;
+            right: 14px;
             background: none;
             border: none;
             color: #888;
-            font-size: 1.2rem;
+            font-size: 1.4rem;
             cursor: pointer;
         }
         #tuningPanel .close-tuning:hover {
@@ -361,15 +361,15 @@
         #tuningPanel .sticker-presets {
             display: flex;
             flex-wrap: wrap;
-            gap: 6px;
+            gap: 8px;
             justify-content: center;
         }
         #tuningPanel .sticker-presets .sticker-btn {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 6px;
-            padding: 4px 10px;
-            font-size: 0.7rem;
+            padding: 5px 12px;
+            font-size: 0.75rem;
             color: #ccc;
             cursor: pointer;
             transition: all 0.3s;
@@ -397,6 +397,49 @@
             width: 100%;
             height: 100%;
             cursor: pointer;
+        }
+
+        /* ===== ГОТОВЫЕ РАСЦВЕТКИ ===== */
+        #tuningPanel .skin-presets {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+        }
+        #tuningPanel .skin-presets .skin-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 4px 10px;
+            font-size: 0.7rem;
+            color: #ccc;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            min-width: 50px;
+        }
+        #tuningPanel .skin-presets .skin-btn:hover {
+            background: rgba(255, 107, 53, 0.2);
+            border-color: #ff6b35;
+            color: #fff;
+        }
+        #tuningPanel .skin-presets .skin-btn.active {
+            background: rgba(255, 107, 53, 0.3);
+            border-color: #ff6b35;
+            color: #fff;
+        }
+        #tuningPanel .skin-presets .skin-btn .color-preview {
+            width: 30px;
+            height: 20px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        #tuningPanel .skin-presets .skin-btn .skin-label {
+            font-size: 0.6rem;
+            color: #888;
         }
 
         /* ===== КНОПКА ТЮНИНГА (круглая) ===== */
@@ -470,18 +513,20 @@
             #creditPanel { bottom: 80px; font-size: 0.5rem; padding: 4px 12px; }
             #promoPanel { top: 70px; padding: 12px 16px; width: 90%; }
             #promoPanel input { width: 140px; font-size: 0.85rem; }
-            #tuningPanel { bottom: 80px; min-width: 90%; padding: 12px 16px; }
+            #tuningPanel { bottom: 80px; min-width: 95%; padding: 16px 18px; max-height: 60vh; overflow-y: auto; }
             #tuningToggle { bottom: 80px; right: 15px; width: 42px; height: 42px; font-size: 1.2rem; }
+            #tuningPanel .skin-presets .skin-btn { min-width: 40px; padding: 3px 6px; }
+            #tuningPanel .skin-presets .skin-btn .color-preview { width: 24px; height: 16px; }
         }
     </style>
 </head>
 <body>
 
-    <!-- ПРОМОКОД ДЛЯ TIRAMISU -->
+    <!-- ПРОМОКОДЫ -->
     <div id="promoPanel">
         <button class="close-btn" id="closePromo">✕</button>
-        <h4 style="color: #ff6b35; margin-bottom: 8px;">🍰 СЕКРЕТНАЯ МАШИНА</h4>
-        <p style="color: #aaa; font-size: 0.8rem; margin-bottom: 10px;">Введите промокод для доступа к Tiramisu SRM</p>
+        <h4 style="color: #ff6b35; margin-bottom: 8px;">🔑 СЕКРЕТНЫЕ МАШИНЫ</h4>
+        <p style="color: #aaa; font-size: 0.8rem; margin-bottom: 10px;">Введите промокод:</p>
         <input type="text" id="promoInput" placeholder="Введите промокод" />
         <button id="promoBtn">Активировать</button>
         <p id="promoError" style="color: #ff3355; font-size: 0.7rem; margin-top: 6px; display: none;">Неверный промокод!</p>
@@ -549,18 +594,43 @@
     <!-- Круглая кнопка тюнинга -->
     <div id="tuningToggle">🎨</div>
 
-    <!-- Панель тюнинга -->
+    <!-- Панель тюнинга (увеличенная) -->
     <div id="tuningPanel">
         <button class="close-tuning" id="closeTuning">✕</button>
         <h4>🎨 ТЮНИНГ</h4>
         
+        <!-- ГОТОВЫЕ РАСЦВЕТКИ -->
         <div class="tuning-row">
-            <label>🎨 Цвет:</label>
+            <label>🎨 Расцветки:</label>
+            <div class="skin-presets">
+                <button class="skin-btn" data-skin="tiramisu">
+                    <div class="color-preview" style="background: linear-gradient(135deg, #ff6b35, #ffd700, #ff6b35);"></div>
+                    <span class="skin-label">Тирамису</span>
+                </button>
+                <button class="skin-btn" data-skin="dragon">
+                    <div class="color-preview" style="background: linear-gradient(135deg, #ff2200, #ff4400, #cc0000);"></div>
+                    <span class="skin-label">Дракон</span>
+                </button>
+                <button class="skin-btn" data-skin="wave">
+                    <div class="color-preview" style="background: linear-gradient(135deg, #0066ff, #00ccff, #0066ff);"></div>
+                    <span class="skin-label">Волна</span>
+                </button>
+                <button class="skin-btn" data-skin="rocket">
+                    <div class="color-preview" style="background: linear-gradient(135deg, #ff6600, #ffaa00, #ff4400);"></div>
+                    <span class="skin-label">Ракета</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ЦВЕТ -->
+        <div class="tuning-row">
+            <label>🎨 Свой цвет:</label>
             <input type="color" id="colorPicker" value="#ff6b35" />
             <button class="tuning-btn" id="applyColorBtn">Применить</button>
             <button class="tuning-btn" id="resetColorBtn">Сбросить</button>
         </div>
 
+        <!-- СТИКЕРЫ -->
         <div class="tuning-row">
             <label>🖼️ Стикеры:</label>
             <div class="sticker-presets">
@@ -573,6 +643,7 @@
             </div>
         </div>
 
+        <!-- СВОЁ ИЗОБРАЖЕНИЕ -->
         <div class="tuning-row">
             <label>📁 Своё изображение:</label>
             <div class="file-input-wrapper">
@@ -722,12 +793,10 @@
         let tankUnlocked = false;
         let tiramisuUnlocked = false;
 
-        // Промокод для танка
-        document.getElementById('promoBtn')?.addEventListener('click', () => {
+        document.getElementById('promoBtn').addEventListener('click', () => {
             const input = document.getElementById('promoInput');
             const error = document.getElementById('promoError');
             
-            // Проверяем оба промокода
             if (input.value.toLowerCase() === 'thetank') {
                 tankUnlocked = true;
                 document.getElementById('promoPanel').style.display = 'none';
@@ -988,7 +1057,6 @@
                     }
                 }
 
-                // Загружаем танк в фоне
                 try {
                     const tankObj = await loadModel('tank', 'low_poly_tank.glb');
                     loadedModels['tank'] = tankObj;
@@ -998,7 +1066,6 @@
                     console.warn('❌ Ошибка загрузки танка:', e);
                 }
 
-                // Загружаем Tiramisu в фоне
                 try {
                     const tiramisuObj = await loadModel('tiramisu', 'crumbelinas_tira-missile_early_look.glb');
                     loadedModels['tiramisu'] = tiramisuObj;
@@ -1034,19 +1101,17 @@
         init();
 
         // --------------------------------------------------------------
-        // 7. ВЫБОР МАШИНЫ (с проверкой промокодов)
+        // 7. ВЫБОР МАШИНЫ
         // --------------------------------------------------------------
         document.querySelectorAll('.car-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const id = btn.dataset.car;
                 
-                // Проверка на танк
                 if (id === 'tank' && !tankUnlocked) {
                     document.getElementById('promoPanel').style.display = 'block';
                     return;
                 }
                 
-                // Проверка на Tiramisu
                 if (id === 'tiramisu' && !tiramisuUnlocked) {
                     document.getElementById('promoPanel').style.display = 'block';
                     return;
@@ -1088,7 +1153,49 @@
         });
 
         // --------------------------------------------------------------
-        // 8. ТЮНИНГ
+        // 8. ТЮНИНГ — РАСЦВЕТКИ
+        // --------------------------------------------------------------
+        const skinColors = {
+            tiramisu: '#ff6b35',
+            dragon: '#ff2200',
+            wave: '#0066ff',
+            rocket: '#ff6600'
+        };
+
+        document.querySelectorAll('.skin-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const skin = btn.dataset.skin;
+                const color = skinColors[skin];
+                if (!color || !currentCar) return;
+
+                // Применяем цвет
+                const colorObj = new THREE.Color(color);
+                currentCar.traverse((child) => {
+                    if (child.isMesh && child.material) {
+                        const key = child.uuid;
+                        if (!originalMaterials.has(key)) {
+                            originalMaterials.set(key, child.material.clone());
+                        }
+                        const mat = child.material;
+                        if (Array.isArray(mat)) {
+                            mat.forEach(m => {
+                                m.color.copy(colorObj);
+                                m.emissive = new THREE.Color(0x000000);
+                            });
+                        } else {
+                            mat.color.copy(colorObj);
+                            mat.emissive = new THREE.Color(0x000000);
+                        }
+                    }
+                });
+
+                document.querySelectorAll('.skin-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            });
+        });
+
+        // --------------------------------------------------------------
+        // 9. ТЮНИНГ — ЦВЕТ
         // --------------------------------------------------------------
         const tuningPanel = document.getElementById('tuningPanel');
         const tuningToggle = document.getElementById('tuningToggle');
@@ -1139,6 +1246,8 @@
                     }
                 }
             });
+
+            document.querySelectorAll('.skin-btn').forEach(b => b.classList.remove('active'));
         });
 
         resetColorBtn.addEventListener('click', () => {
@@ -1166,10 +1275,11 @@
                     }
                 }
             });
+            document.querySelectorAll('.skin-btn').forEach(b => b.classList.remove('active'));
         });
 
         // --------------------------------------------------------------
-        // 9. СТИКЕРЫ
+        // 10. СТИКЕРЫ
         // --------------------------------------------------------------
         function createStickerTexture(text, bgColor = '#ff6b35', textColor = '#ffffff') {
             const canvas = document.createElement('canvas');
@@ -1282,7 +1392,7 @@
         });
 
         // --------------------------------------------------------------
-        // 10. УПРАВЛЕНИЕ
+        // 11. УПРАВЛЕНИЕ
         // --------------------------------------------------------------
         document.addEventListener('keydown', (e) => {
             const key = e.key;
@@ -1387,7 +1497,7 @@
         }
 
         // --------------------------------------------------------------
-        // 11. КАМЕРА
+        // 12. КАМЕРА
         // --------------------------------------------------------------
         const CAMERA_DISTANCE_MIN = 4.5;
         const CAMERA_DISTANCE_MAX = 6.5;
@@ -1433,7 +1543,7 @@
         }
 
         // --------------------------------------------------------------
-        // 12. АДАПТАЦИЯ ПОД ОКНО
+        // 13. АДАПТАЦИЯ ПОД ОКНО
         // --------------------------------------------------------------
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
@@ -1442,7 +1552,7 @@
         });
 
         // --------------------------------------------------------------
-        // 13. АНИМАЦИОННЫЙ ЦИКЛ
+        // 14. АНИМАЦИОННЫЙ ЦИКЛ
         // --------------------------------------------------------------
         function animate() {
             requestAnimationFrame(animate);
@@ -1455,11 +1565,10 @@
         animate();
 
         console.log('🚗 Симулятор запущен!');
-        console.log('📍 Поле увеличено в 9 раз (720×720), спавн в центре (0, 0, 0)');
-        console.log('🎖️ TTTank разблокируется по промокоду "thetank"');
-        console.log('🍰 Tiramisu SRM разблокируется по промокоду "MilaDR10"');
-        console.log('🎨 Нажмите круглую кнопку 🎨 для тюнинга!');
-        console.log('📋 Кликните на заголовок "МАШИНЫ" чтобы свернуть/развернуть окно');
+        console.log('📍 Поле 720×720, спавн в центре (0, 0, 0)');
+        console.log('🎖️ TTTank: промокод "thetank"');
+        console.log('🍰 Tiramisu SRM: промокод "MilaDR10"');
+        console.log('🎨 Готовые расцветки: Тирамису, Дракон, Волна, Ракета');
         console.log('📖 Управление: W/↑-вперёд, S/↓-назад, A/←-влево, D/→-вправо, Пробел-ручник');
     </script>
 </body>
