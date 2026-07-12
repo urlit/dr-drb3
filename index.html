@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Городской симулятор — Миникарта</title>
     <style>
-        /* --- Все предыдущие стили остаются без изменений --- */
         * {
             margin: 0;
             padding: 0;
@@ -692,7 +691,8 @@
 
         // Маркер в центре
         const markerGeo = new THREE.RingGeometry(0.5, 0.8, 32);
-        const markerMat = new THREE.MeshBasicMaterial({ color: 0xff6b35, side: THREE.DoubleSide, transparent: true, opacity: 0.5 });
+        const markerMat = new THREE.MeshBasicMaterial({ color: 0xff6b35, side: THREE.DoubleSide, transparent: true,
+            opacity: 0.5 });
         const marker = new THREE.Mesh(markerGeo, markerMat);
         marker.rotation.x = -Math.PI / 2;
         marker.position.y = -0.47;
@@ -792,21 +792,37 @@
         const CYBERTRUCK_CAMERA_HEIGHT = 4.5;
 
         const keys = {
-            w: false, s: false, a: false, d: false,
-            up: false, down: false, left: false, right: false,
+            w: false,
+            s: false,
+            a: false,
+            d: false,
+            up: false,
+            down: false,
+            left: false,
+            right: false,
             space: false,
         };
 
         const modelsList = [
-            { id: 'bmw', name: 'BEEMWA 22', emoji: '🚗', file: 'bmw2002.glb', rotation: 0, isCybertruck: false, locked: false, credit: '"1968 BMW 2002" (https://skfb.ly/pFqYn) by tonielpro520 is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)' },
-            { id: 'bmw30', name: 'BEEMWA 30', emoji: '🚗', file: 'BEEMWAPP3.glb', rotation: Math.PI / 2, isCybertruck: false, locked: false, credit: '"Low Poly Car - BMW E30 1985 White" (https://skfb.ly/o8EBR) by ROH3D is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)' },
-            { id: 'nissan', name: 'Neasun Loral 2rbo', emoji: '🚘', file: 'nissan_laurel.glb', rotation: Math.PI / 2, isCybertruck: false, locked: false, credit: '"Nissan Laurel C31 Turbo 85\'" (https://skfb.ly/6SoPW) by own.guest is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)' },
-            { id: 'mercedes', name: 'Tantoya Korova', emoji: '🚙', file: 'gelik.glb', rotation: 0, isCybertruck: false, locked: false, credit: '"Toyota Corola" (https://skfb.ly/6RHQA) by danieljorge435 is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)' },
-            { id: 'toyota', name: 'Tantoya Parmezan', emoji: '🚗', file: 'toyota_tezzo.glb', rotation: -Math.PI / 2, isCybertruck: false, locked: false, credit: '"Tozzo \'98 - Low poly model" (https://skfb.ly/pB6Xs) by Daniel Zhabotinsky is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)' },
-            { id: 'pagani', name: 'Poganka Sport', emoji: '🏎️', file: 'pagani1.glb', rotation: 0, isCybertruck: false, locked: false, credit: '"Pagani Zonda Cinque" (https://skfb.ly/oBt9O) by Ajay Gawde is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)' },
-            { id: 'tank', name: 'TTTank', emoji: '🎖️', file: 'low_poly_tank.glb', rotation: Math.PI / 2, isCybertruck: false, locked: true, credit: '"Low Poly Tank" (https://skfb.ly/6YNSy) by Kolos Studios is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)', isTank: true },
-            { id: 'cybertruck', name: 'Teelsa Hypertrick', emoji: '🚛', file: 'low_poly_tesla_cybertruck.glb', rotation: 0, isCybertruck: true, locked: false, scale: 2.0, credit: 'Free Standard' },
-            { id: 'tiramisu', name: 'Tiramisu SRM', emoji: '🍰', file: 'crumbelinas_tira-missile_early_look.glb', rotation: 0, isCybertruck: false, locked: true, credit: '"Crumbelina\'s Tira-Missile (Early look)" (https://skfb.ly/pAR7K) by CrystalCandySTK is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)' }
+            { id: 'bmw', name: 'BEEMWA 22', emoji: '🚗', file: 'bmw2002.glb', rotation: 0, isCybertruck: false,
+                locked: false, credit: '"1968 BMW 2002" (https://skfb.ly/pFqYn) by tonielpro520 is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)' },
+            { id: 'bmw30', name: 'BEEMWA 30', emoji: '🚗', file: 'BEEMWAPP3.glb', rotation: Math.PI / 2, isCybertruck: false,
+                locked: false, credit: '"Low Poly Car - BMW E30 1985 White" (https://skfb.ly/o8EBR) by ROH3D is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)' },
+            { id: 'nissan', name: 'Neasun Loral 2rbo', emoji: '🚘', file: 'nissan_laurel.glb', rotation: Math.PI / 2,
+                isCybertruck: false, locked: false, credit: '"Nissan Laurel C31 Turbo 85\'" (https://skfb.ly/6SoPW) by own.guest is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)' },
+            { id: 'mercedes', name: 'Tantoya Korova', emoji: '🚙', file: 'gelik.glb', rotation: 0, isCybertruck: false,
+                locked: false, credit: '"Toyota Corola" (https://skfb.ly/6RHQA) by danieljorge435 is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)' },
+            { id: 'toyota', name: 'Tantoya Parmezan', emoji: '🚗', file: 'toyota_tezzo.glb', rotation: -Math.PI / 2,
+                isCybertruck: false, locked: false, credit: '"Tozzo \'98 - Low poly model" (https://skfb.ly/pB6Xs) by Daniel Zhabotinsky is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)' },
+            { id: 'pagani', name: 'Poganka Sport', emoji: '🏎️', file: 'pagani1.glb', rotation: 0, isCybertruck: false,
+                locked: false, credit: '"Pagani Zonda Cinque" (https://skfb.ly/oBt9O) by Ajay Gawde is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)' },
+            { id: 'tank', name: 'TTTank', emoji: '🎖️', file: 'low_poly_tank.glb', rotation: Math.PI / 2, isCybertruck: false,
+                locked: true, credit: '"Low Poly Tank" (https://skfb.ly/6YNSy) by Kolos Studios is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)',
+                isTank: true },
+            { id: 'cybertruck', name: 'Teelsa Hypertrick', emoji: '🚛', file: 'low_poly_tesla_cybertruck.glb', rotation: 0,
+                isCybertruck: true, locked: false, scale: 2.0, credit: 'Free Standard' },
+            { id: 'tiramisu', name: 'Tiramisu SRM', emoji: '🍰', file: 'crumbelinas_tira-missile_early_look.glb',
+                rotation: 0, isCybertruck: false, locked: true, credit: '"Crumbelina\'s Tira-Missile (Early look)" (https://skfb.ly/pAR7K) by CrystalCandySTK is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)' }
         ];
 
         const loadedModels = {};
@@ -893,7 +909,8 @@
                 renderCarList();
             } catch (error) {
                 console.error('Ошибка загрузки:', error);
-                loadingDiv.innerHTML = `<p style="color: #ff6b35; font-weight: 500;">❌ Не удалось загрузить модели.<br>Проверьте пути к файлам.</p>`;
+                loadingDiv.innerHTML =
+                    `<p style="color: #ff6b35; font-weight: 500;">❌ Не удалось загрузить модели.<br>Проверьте пути к файлам.</p>`;
             }
         }
         init();
@@ -954,7 +971,9 @@
         const carSelector = document.getElementById('carSelector');
         const closeMenuBtn = document.getElementById('closeMenu');
 
-        function openMenu() { carSelector.classList.add('open'); renderCarList(); }
+        function openMenu() { carSelector.classList.add('open');
+            renderCarList(); }
+
         function closeMenu() { carSelector.classList.remove('open'); }
 
         menuToggle.addEventListener('click', () => {
@@ -1052,7 +1071,8 @@
                     if (!originalMaterials.has(key)) originalMaterials.set(key, child.material.clone());
                     const mat = child.material;
                     if (Array.isArray(mat)) {
-                        mat.forEach(m => { m.color.copy(color); m.emissive = new THREE.Color(0x000000); });
+                        mat.forEach(m => { m.color.copy(color);
+                            m.emissive = new THREE.Color(0x000000); });
                     } else {
                         mat.color.copy(color);
                         mat.emissive = new THREE.Color(0x000000);
@@ -1114,7 +1134,8 @@
                         if (!originalMaterials.has(key)) originalMaterials.set(key, child.material.clone());
                         const mat = child.material;
                         if (Array.isArray(mat)) {
-                            mat.forEach(m => { m.map = tex; m.needsUpdate = true; });
+                            mat.forEach(m => { m.map = tex;
+                                m.needsUpdate = true; });
                         } else {
                             mat.map = tex;
                             mat.needsUpdate = true;
@@ -1139,7 +1160,8 @@
                             if (!originalMaterials.has(key)) originalMaterials.set(key, child.material.clone());
                             const mat = child.material;
                             if (Array.isArray(mat)) {
-                                mat.forEach(m => { m.map = tex; m.needsUpdate = true; });
+                                mat.forEach(m => { m.map = tex;
+                                    m.needsUpdate = true; });
                             } else {
                                 mat.map = tex;
                                 mat.needsUpdate = true;
@@ -1157,28 +1179,46 @@
         // --------------------------------------------------------------
         document.addEventListener('keydown', (e) => {
             const key = e.key;
-            if (key === 'w' || key === 'W') { keys.w = true; e.preventDefault(); }
-            if (key === 's' || key === 'S') { keys.s = true; e.preventDefault(); }
-            if (key === 'a' || key === 'A') { keys.a = true; e.preventDefault(); }
-            if (key === 'd' || key === 'D') { keys.d = true; e.preventDefault(); }
-            if (key === 'ArrowUp') { keys.up = true; e.preventDefault(); }
-            if (key === 'ArrowDown') { keys.down = true; e.preventDefault(); }
-            if (key === 'ArrowLeft') { keys.left = true; e.preventDefault(); }
-            if (key === 'ArrowRight') { keys.right = true; e.preventDefault(); }
-            if (key === ' ') { keys.space = true; e.preventDefault(); }
+            if (key === 'w' || key === 'W') { keys.w = true;
+                e.preventDefault(); }
+            if (key === 's' || key === 'S') { keys.s = true;
+                e.preventDefault(); }
+            if (key === 'a' || key === 'A') { keys.a = true;
+                e.preventDefault(); }
+            if (key === 'd' || key === 'D') { keys.d = true;
+                e.preventDefault(); }
+            if (key === 'ArrowUp') { keys.up = true;
+                e.preventDefault(); }
+            if (key === 'ArrowDown') { keys.down = true;
+                e.preventDefault(); }
+            if (key === 'ArrowLeft') { keys.left = true;
+                e.preventDefault(); }
+            if (key === 'ArrowRight') { keys.right = true;
+                e.preventDefault(); }
+            if (key === ' ') { keys.space = true;
+                e.preventDefault(); }
         });
 
         document.addEventListener('keyup', (e) => {
             const key = e.key;
-            if (key === 'w' || key === 'W') { keys.w = false; e.preventDefault(); }
-            if (key === 's' || key === 'S') { keys.s = false; e.preventDefault(); }
-            if (key === 'a' || key === 'A') { keys.a = false; e.preventDefault(); }
-            if (key === 'd' || key === 'D') { keys.d = false; e.preventDefault(); }
-            if (key === 'ArrowUp') { keys.up = false; e.preventDefault(); }
-            if (key === 'ArrowDown') { keys.down = false; e.preventDefault(); }
-            if (key === 'ArrowLeft') { keys.left = false; e.preventDefault(); }
-            if (key === 'ArrowRight') { keys.right = false; e.preventDefault(); }
-            if (key === ' ') { keys.space = false; e.preventDefault(); }
+            if (key === 'w' || key === 'W') { keys.w = false;
+                e.preventDefault(); }
+            if (key === 's' || key === 'S') { keys.s = false;
+                e.preventDefault(); }
+            if (key === 'a' || key === 'A') { keys.a = false;
+                e.preventDefault(); }
+            if (key === 'd' || key === 'D') { keys.d = false;
+                e.preventDefault(); }
+            if (key === 'ArrowUp') { keys.up = false;
+                e.preventDefault(); }
+            if (key === 'ArrowDown') { keys.down = false;
+                e.preventDefault(); }
+            if (key === 'ArrowLeft') { keys.left = false;
+                e.preventDefault(); }
+            if (key === 'ArrowRight') { keys.right = false;
+                e.preventDefault(); }
+            if (key === ' ') { keys.space = false;
+                e.preventDefault(); }
         });
 
         function updateCar() {
@@ -1270,12 +1310,10 @@
         }
 
         // --------------------------------------------------------------
-        // 13. МИНИКАРТА
+        // 13. МИНИКАРТА (с 5 улицами)
         // --------------------------------------------------------------
         const minimapCanvas = document.getElementById('minimapCanvas');
         const ctx = minimapCanvas.getContext('2d');
-        const mapSize = 180; // Размер мини-карты в пикселях
-        const viewSize = 180; // Размер отображаемой области в игровых единицах
 
         function resizeMinimap() {
             const rect = document.getElementById('minimap').getBoundingClientRect();
@@ -1293,72 +1331,81 @@
             const size = rect.width || 180;
             const canvas = minimapCanvas;
             const ctx = canvas.getContext('2d');
-            
-            // Очистка
+
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Фон
+
             ctx.fillStyle = 'rgba(20, 25, 35, 0.85)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Границы поля
+
             const halfWorld = BOUNDARY;
-            const scale = canvas.width / (viewSize);
-            
-            // Преобразование координат из игровых в пиксельные на мини-карте
+
             function toMapX(x) {
                 return (x + halfWorld) / (halfWorld * 2) * canvas.width;
             }
+
             function toMapY(z) {
                 return (z + halfWorld) / (halfWorld * 2) * canvas.height;
             }
-            
-            // Рисуем улицы (линии)
+
+            // === ВСЕ 5 УЛИЦ ===
+            // Улица 1: от (11.21, -68.25) до (11.21, 39.00)
             ctx.strokeStyle = 'rgba(255, 215, 0, 0.6)';
             ctx.lineWidth = 2;
-            
-            // 1-я улица: от (11.21, -68.25) до (11.21, 39.00)
-            const x1 = 11.21;
-            const y1_start = -68.25;
-            const y1_end = 39.00;
             ctx.beginPath();
-            ctx.moveTo(toMapX(x1), toMapY(y1_start));
-            ctx.lineTo(toMapX(x1), toMapY(y1_end));
+            ctx.moveTo(toMapX(11.21), toMapY(-68.25));
+            ctx.lineTo(toMapX(11.21), toMapY(39.00));
             ctx.stroke();
-            
-            // 2-я улица: от (-58.90, 40.79) до (80.00, 40.67)
-            const x2_start = -58.90;
-            const x2_end = 80.00;
-            const y2 = 40.79;
+
+            // Улица 2: от (-58.90, 40.79) до (80.00, 40.67)
             ctx.beginPath();
-            ctx.moveTo(toMapX(x2_start), toMapY(y2));
-            ctx.lineTo(toMapX(x2_end), toMapY(y2));
+            ctx.moveTo(toMapX(-58.90), toMapY(40.79));
+            ctx.lineTo(toMapX(80.00), toMapY(40.67));
             ctx.stroke();
-            
+
+            // Улица 3: от (-82.23, 14.79) до (48.55, 14.74)
+            ctx.strokeStyle = 'rgba(255, 215, 0, 0.5)';
+            ctx.beginPath();
+            ctx.moveTo(toMapX(-82.23), toMapY(14.79));
+            ctx.lineTo(toMapX(48.55), toMapY(14.74));
+            ctx.stroke();
+
+            // Улица 4: от (38.50, 68.23) до (39.35, 41.39)
+            ctx.beginPath();
+            ctx.moveTo(toMapX(38.50), toMapY(68.23));
+            ctx.lineTo(toMapX(39.35), toMapY(41.39));
+            ctx.stroke();
+
+            // Улица 5: от (-57.58, 41.91) до (-57.21, -35.20)
+            ctx.beginPath();
+            ctx.moveTo(toMapX(-57.58), toMapY(41.91));
+            ctx.lineTo(toMapX(-57.21), toMapY(-35.20));
+            ctx.stroke();
+
             // Подписи улиц
-            ctx.fillStyle = 'rgba(255, 215, 0, 0.4)';
-            ctx.font = '8px sans-serif';
+            ctx.fillStyle = 'rgba(255, 215, 0, 0.35)';
+            ctx.font = '7px sans-serif';
             ctx.textAlign = 'center';
             ctx.fillText('Ул.1', toMapX(11.21), toMapY(-25));
             ctx.fillText('Ул.2', toMapX(10), toMapY(40.79) - 6);
-            
-            // Рисуем центр
+            ctx.fillText('Ул.3', toMapX(-20), toMapY(14.79) - 6);
+            ctx.fillText('Ул.4', toMapX(39), toMapY(55));
+            ctx.fillText('Ул.5', toMapX(-57.4), toMapY(5));
+
+            // Центр
             ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
             ctx.beginPath();
             ctx.arc(toMapX(0), toMapY(0), 3, 0, Math.PI * 2);
             ctx.fill();
-            
-            // Рисуем положение машины
+
+            // Машина
             if (currentCar && carLoaded) {
                 const pos = currentCar.position;
                 const px = toMapX(pos.x);
                 const py = toMapY(pos.z);
-                
-                // Тень
+
                 ctx.shadowColor = 'rgba(255, 107, 53, 0.5)';
                 ctx.shadowBlur = 10;
-                
-                // Точка машины
+
                 const gradient = ctx.createRadialGradient(px, py, 0, px, py, 6);
                 gradient.addColorStop(0, '#ff6b35');
                 gradient.addColorStop(1, 'rgba(255, 107, 53, 0)');
@@ -1366,29 +1413,24 @@
                 ctx.beginPath();
                 ctx.arc(px, py, 6, 0, Math.PI * 2);
                 ctx.fill();
-                
+
                 ctx.shadowBlur = 0;
-                
-                // Яркая точка в центре
+
                 ctx.fillStyle = '#ff6b35';
                 ctx.beginPath();
                 ctx.arc(px, py, 2.5, 0, Math.PI * 2);
                 ctx.fill();
-                
-                // Направление машины (маленькая линия)
+
                 const angle = carState.rotation;
                 const dirLen = 6;
-                const dx = Math.sin(angle) * dirLen;
-                const dz = Math.cos(angle) * dirLen;
                 ctx.strokeStyle = '#ff6b35';
                 ctx.lineWidth = 1.5;
                 ctx.beginPath();
                 ctx.moveTo(px, py);
-                ctx.lineTo(px + dx, py + dz);
+                ctx.lineTo(px + Math.sin(angle) * dirLen, py + Math.cos(angle) * dirLen);
                 ctx.stroke();
             }
-            
-            // Рамка
+
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
             ctx.lineWidth = 1;
             ctx.strokeRect(0, 0, canvas.width, canvas.height);
