@@ -144,7 +144,7 @@
             min-width: 220px;
             max-height: calc(100vh - 120px);
             overflow: hidden;
-            display: none; /* скрыто по умолчанию */
+            display: none;
             flex-direction: column;
             padding: 12px 16px 16px 16px;
             gap: 8px;
@@ -511,11 +511,8 @@
             <h4>🚗 ВЫБОР МАШИНЫ</h4>
             <button class="close-menu" id="closeMenu">✕</button>
         </div>
-        <div class="car-list" id="carList">
-            <!-- Кнопки машин генерируются JS -->
-        </div>
+        <div class="car-list" id="carList"></div>
 
-        <!-- Блок промокода -->
         <div class="promo-block">
             <label>🔑 Промокод</label>
             <div class="promo-row">
@@ -569,8 +566,7 @@
     </div>
 
     <div id="creditPanel">
-        🚗 Модели: 
-        <span id="creditText">BEEMWA 22 — © tonielpro520 · CC BY</span>
+        🏙️ Модель города: "Tiny City" by Matheus Dalla · CC BY &nbsp;|&nbsp; 🚗 Модели: <span id="creditText">BEEMWA 22 — © tonielpro520 · CC BY</span>
     </div>
 
     <div id="hud">
@@ -619,54 +615,39 @@
         // 2. ОСВЕЩЕНИЕ
         // --------------------------------------------------------------
         const sunLight = new THREE.DirectionalLight(0xffeedd, 2.5);
-        sunLight.position.set(100, 150, 80);
+        sunLight.position.set(30, 40, 20);
         sunLight.castShadow = true;
         sunLight.shadow.mapSize.width = 4096;
         sunLight.shadow.mapSize.height = 4096;
         sunLight.shadow.camera.near = 0.1;
-        sunLight.shadow.camera.far = 500;
-        sunLight.shadow.camera.left = -300;
-        sunLight.shadow.camera.right = 300;
-        sunLight.shadow.camera.top = 300;
-        sunLight.shadow.camera.bottom = -300;
+        sunLight.shadow.camera.far = 100;
+        sunLight.shadow.camera.left = -50;
+        sunLight.shadow.camera.right = 50;
+        sunLight.shadow.camera.top = 50;
+        sunLight.shadow.camera.bottom = -50;
         scene.add(sunLight);
 
         const fillLight = new THREE.DirectionalLight(0x88ccff, 0.8);
-        fillLight.position.set(-50, 30, -80);
+        fillLight.position.set(-20, 10, -30);
         scene.add(fillLight);
 
         const ambientLight = new THREE.AmbientLight(0x88bbdd, 0.8);
         scene.add(ambientLight);
 
         // --------------------------------------------------------------
-        // 3. ПОЛ
+        // 3. НОВАЯ КАРТА (уменьшенное поле + город)
         // --------------------------------------------------------------
-        const canvas = document.createElement('canvas');
-        canvas.width = 1024;
-        canvas.height = 1024;
-        const ctx = canvas.getContext('2d');
-        
-        ctx.fillStyle = '#4a8c3f';
-        ctx.fillRect(0, 0, 1024, 1024);
-        
-        for (let i = 0; i < 80000; i++) {
-            const x = Math.random() * 1024;
-            const y = Math.random() * 1024;
-            const size = 1 + Math.random() * 4;
-            const green = 80 + Math.random() * 100;
-            ctx.fillStyle = `rgb(30, ${green}, 20)`;
-            ctx.fillRect(x, y, size, size);
-        }
-        
-        const texture = new THREE.CanvasTexture(canvas);
-        texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-        texture.repeat.set(90, 90);
+        // Размеры нового поля: 720 / 4 = 180
+        const WORLD_SIZE = 180;
+        const BOUNDARY = WORLD_SIZE / 2 - 2; // ~88 для границ
 
-        const groundGeo = new THREE.PlaneGeometry(720, 720);
-        const groundMat = new THREE.MeshStandardMaterial({
-            map: texture,
-            roughness: 0.9,
-            metalness: 0.0,
+        // Удаляем старый пол и сетку, если они были добавлены ранее
+        // (в этом скрипте они создаются ниже, но мы их заменим)
+        // Вместо травяного поля — прозрачная подложка для теней
+        const groundGeo = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE);
+        const groundMat = new THREE.ShadowMaterial({
+            opacity: 0.3,
+            color: 0x000000,
         });
         const ground = new THREE.Mesh(groundGeo, groundMat);
         ground.rotation.x = -Math.PI / 2;
@@ -674,36 +655,76 @@
         ground.receiveShadow = true;
         scene.add(ground);
 
-        const gridHelper = new THREE.GridHelper(360, 36, 0x88dd88, 0x44aa44);
+        // Сетка для ориентации (уменьшенная)
+        const gridHelper = new THREE.GridHelper(WORLD_SIZE, 20, 0x88dd88, 0x44aa44);
         gridHelper.position.y = -0.48;
         scene.add(gridHelper);
 
-        const markerGeo = new THREE.RingGeometry(0.8, 1.2, 32);
+        // Маркер в центре
+        const markerGeo = new THREE.RingGeometry(0.5, 0.8, 32);
         const markerMat = new THREE.MeshBasicMaterial({
             color: 0xff6b35,
             side: THREE.DoubleSide,
             transparent: true,
-            opacity: 0.4,
+            opacity: 0.5,
         });
         const marker = new THREE.Mesh(markerGeo, markerMat);
         marker.rotation.x = -Math.PI / 2;
         marker.position.y = -0.47;
         scene.add(marker);
 
-        const marker2Geo = new THREE.RingGeometry(2, 2.5, 32);
-        const marker2Mat = new THREE.MeshBasicMaterial({
-            color: 0xff6b35,
-            side: THREE.DoubleSide,
-            transparent: true,
-            opacity: 0.15,
-        });
-        const marker2 = new THREE.Mesh(marker2Geo, marker2Mat);
-        marker2.rotation.x = -Math.PI / 2;
-        marker2.position.y = -0.46;
-        scene.add(marker2);
+        // --------------------------------------------------------------
+        // 4. ЗАГРУЗКА МОДЕЛИ ГОРОДА
+        // --------------------------------------------------------------
+        const cityLoader = new GLTFLoader();
+        let cityLoaded = false;
+
+        cityLoader.load(
+            'tiny_city.glb',
+            (gltf) => {
+                const city = gltf.scene;
+                
+                // Вычисляем bounding box для масштабирования
+                const box = new THREE.Box3().setFromObject(city);
+                const size = box.getSize(new THREE.Vector3());
+                const maxDim = Math.max(size.x, size.y, size.z);
+                
+                // Масштабируем так, чтобы город заполнил всё поле
+                const targetSize = WORLD_SIZE * 0.9; // чуть меньше, чтобы не вылезал за границы
+                const scale = targetSize / maxDim;
+                city.scale.set(scale, scale, scale);
+                
+                // Центрируем город
+                const center = new THREE.Vector3();
+                box.getCenter(center);
+                city.position.sub(center.multiplyScalar(scale));
+                city.position.y = -0.5; // Опускаем на уровень пола
+                
+                // Включаем тени для всех частей города
+                city.traverse((child) => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                    }
+                });
+                
+                scene.add(city);
+                cityLoaded = true;
+                console.log('✅ Город загружен и растянут на всё поле');
+            },
+            (xhr) => {
+                const percent = Math.round((xhr.loaded / xhr.total) * 100);
+                const status = document.getElementById('loadStatus');
+                if (status) status.textContent = `Загрузка города... ${percent}%`;
+            },
+            (error) => {
+                console.error('Ошибка загрузки города:', error);
+                document.getElementById('loadStatus').textContent = '⚠️ Город не загружен, но поле доступно';
+            }
+        );
 
         // --------------------------------------------------------------
-        // 4. ТЕКСТУРЫ
+        // 5. ТЕКСТУРЫ
         // --------------------------------------------------------------
         const textureUrls = [
             { name: 'Абстракция', url: 'https://i.pinimg.com/originals/1c/f8/04/1cf80494042a9f7dc2a82de72029392b.jpg?nii=t' },
@@ -729,7 +750,7 @@
         });
 
         // --------------------------------------------------------------
-        // 5. ЗАГРУЗКА МОДЕЛЕЙ
+        // 6. ЗАГРУЗКА МОДЕЛЕЙ МАШИН
         // --------------------------------------------------------------
         const loader = new GLTFLoader();
         const loadingDiv = document.getElementById('loading');
@@ -753,7 +774,6 @@
         const TURN_SPEED = 0.03;
         const FRICTION = 0.99;
         const TANK_MAX_SPEED = 0.23;
-        const BOUNDARY = 315;
 
         const CYBERTRUCK_CAMERA_DISTANCE = 8;
         const CYBERTRUCK_CAMERA_HEIGHT = 4.5;
@@ -930,7 +950,7 @@
 
         async function init() {
             try {
-                // Загружаем все модели, кроме locked (они будут загружены позже при разблокировке)
+                // Загружаем все модели, кроме locked
                 const modelsToLoad = modelsList.filter(m => !m.locked);
                 
                 for (const model of modelsToLoad) {
@@ -946,7 +966,7 @@
                     }
                 }
 
-                // Загружаем locked модели в фоне (без отображения)
+                // Загружаем locked модели в фоне
                 const lockedModels = modelsList.filter(m => m.locked);
                 for (const model of lockedModels) {
                     try {
@@ -985,7 +1005,7 @@
         init();
 
         // --------------------------------------------------------------
-        // 6. ОТОБРАЖЕНИЕ СПИСКА МАШИН В МЕНЮ
+        // 7. ОТОБРАЖЕНИЕ СПИСКА МАШИН В МЕНЮ
         // --------------------------------------------------------------
         function renderCarList() {
             const container = document.getElementById('carList');
@@ -1009,7 +1029,6 @@
             const model = modelsList.find(m => m.id === id);
             if (!model) return;
             if (model.locked) {
-                // Показываем сообщение в промо-блоке
                 document.getElementById('promoMessage').textContent = '❌ Машина заблокирована. Введите промокод.';
                 document.getElementById('promoMessage').className = 'promo-message error';
                 return;
@@ -1044,12 +1063,11 @@
                 if (b.dataset.car === id) b.classList.add('active');
             });
 
-            // Закрыть меню после выбора
             closeMenu();
         }
 
         // --------------------------------------------------------------
-        // 7. УПРАВЛЕНИЕ МЕНЮ
+        // 8. УПРАВЛЕНИЕ МЕНЮ
         // --------------------------------------------------------------
         const menuToggle = document.getElementById('menuToggle');
         const carSelector = document.getElementById('carSelector');
@@ -1057,7 +1075,6 @@
 
         function openMenu() {
             carSelector.classList.add('open');
-            // перерендерим список, чтобы обновить состояние
             renderCarList();
         }
 
@@ -1075,7 +1092,6 @@
 
         closeMenuBtn.addEventListener('click', closeMenu);
 
-        // Закрытие по клику вне меню (на фон)
         document.addEventListener('click', (e) => {
             if (carSelector.classList.contains('open')) {
                 if (!carSelector.contains(e.target) && e.target !== menuToggle) {
@@ -1085,7 +1101,7 @@
         });
 
         // --------------------------------------------------------------
-        // 8. ПРОМОКОДЫ
+        // 9. ПРОМОКОДЫ
         // --------------------------------------------------------------
         const promoInput = document.getElementById('promoInput');
         const promoBtn = document.getElementById('promoBtn');
@@ -1100,19 +1116,14 @@
             }
 
             let unlocked = false;
-            // Проверяем коды
             if (code.toLowerCase() === 'thetank' || code === 'танк') {
-                // Разблокируем TTTank
                 const tank = modelsList.find(m => m.id === 'tank');
                 if (tank && tank.locked) {
                     tank.locked = false;
                     unlocked = true;
-                    // Показываем кнопку в меню без замка
                     renderCarList();
                     promoMessage.textContent = '✅ TTTank разблокирован!';
                     promoMessage.className = 'promo-message success';
-                    // Автоматически выбираем танк?
-                    // Можно оставить как есть
                 } else {
                     promoMessage.textContent = '⚠️ TTTank уже разблокирован';
                     promoMessage.className = 'promo-message error';
@@ -1135,14 +1146,12 @@
             }
 
             if (unlocked) {
-                // Можно автоматически выбрать разблокированную машину
-                // Для простоты просто обновим список
                 promoInput.value = '';
             }
         });
 
         // --------------------------------------------------------------
-        // 9. ГАРАЖ (тюнинг)
+        // 10. ГАРАЖ
         // --------------------------------------------------------------
         const garagePanel = document.getElementById('garagePanel');
         const garageToggle = document.getElementById('garageToggle');
@@ -1159,7 +1168,6 @@
             garagePanel.style.display = 'none';
         });
 
-        // --- Цвет ---
         function saveOriginalMaterials(model) {
             if (!model) return;
             model.traverse((child) => {
@@ -1223,7 +1231,6 @@
             });
         });
 
-        // --- Вращение ---
         document.getElementById('rotLeft').addEventListener('click', () => {
             if (!currentCar) return;
             currentCar.rotation.y -= 0.2;
@@ -1240,7 +1247,6 @@
             currentCar.rotation.y = modelInfo ? modelInfo.rotation || 0 : 0;
         });
 
-        // --- Текстуры ---
         function applyTexture(index) {
             if (!currentCar) return;
             const textureData = textureUrls[index];
@@ -1276,7 +1282,6 @@
             );
         }
 
-        // --- Своё изображение ---
         document.getElementById('stickerFileInput').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -1313,7 +1318,7 @@
         });
 
         // --------------------------------------------------------------
-        // 10. УПРАВЛЕНИЕ (W — назад, S — вперёд)
+        // 11. УПРАВЛЕНИЕ (W — назад, S — вперёд)
         // --------------------------------------------------------------
         document.addEventListener('keydown', (e) => {
             const key = e.key;
@@ -1357,12 +1362,12 @@
             let acceleration = 0;
             let turn = 0;
 
-            // === ИСПРАВЛЕНИЕ: W — назад, S — вперёд ===
+            // W — назад, S — вперёд
             if (keys.w || keys.up) {
-                acceleration = -ENGINE_FORCE; // назад
+                acceleration = -ENGINE_FORCE;
             }
             if (keys.s || keys.down) {
-                acceleration = REVERSE_FORCE; // вперёд (используем REVERSE_FORCE как положительное)
+                acceleration = REVERSE_FORCE;
             }
             if (keys.a || keys.left) turn = TURN_SPEED;
             if (keys.d || keys.right) turn = -TURN_SPEED;
@@ -1388,6 +1393,7 @@
 
             position.add(velocity);
 
+            // НОВЫЕ ГРАНИЦЫ (уменьшенное поле)
             if (Math.abs(position.x) > BOUNDARY) {
                 position.x = Math.sign(position.x) * BOUNDARY;
                 velocity.x = 0;
@@ -1419,7 +1425,7 @@
         }
 
         // --------------------------------------------------------------
-        // 11. КАМЕРА
+        // 12. КАМЕРА
         // --------------------------------------------------------------
         const CAMERA_DISTANCE_MIN = 4.5;
         const CAMERA_DISTANCE_MAX = 6.5;
@@ -1465,7 +1471,7 @@
         }
 
         // --------------------------------------------------------------
-        // 12. АДАПТАЦИЯ ПОД ОКНО
+        // 13. АДАПТАЦИЯ ПОД ОКНО
         // --------------------------------------------------------------
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
@@ -1474,7 +1480,7 @@
         });
 
         // --------------------------------------------------------------
-        // 13. АНИМАЦИОННЫЙ ЦИКЛ
+        // 14. АНИМАЦИОННЫЙ ЦИКЛ
         // --------------------------------------------------------------
         function animate() {
             requestAnimationFrame(animate);
@@ -1486,8 +1492,8 @@
         }
         animate();
 
-        console.log('🚗 Симулятор запущен!');
-        console.log('📍 Поле 720×720, спавн в центре (0, 0, 0)');
+        console.log('🏙️ Симулятор запущен с картой города!');
+        console.log(`📍 Размер поля: ${WORLD_SIZE}×${WORLD_SIZE}, центр (0, 0, 0)`);
         console.log('🔑 Промокоды: "танк" — TTTank, "мила" — Tiramisu SRM');
         console.log('🔧 Нажмите кнопку 🔧 для открытия гаража');
         console.log('📖 Управление: W/↑ — назад, S/↓ — вперёд, A/←, D/→ — руль, Пробел — ручник');
