@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Drifting & Tuning BETA</title>
+    <title>Городской симулятор — Город</title>
     <style>
         * {
             margin: 0;
@@ -641,9 +641,7 @@
         const WORLD_SIZE = 180;
         const BOUNDARY = WORLD_SIZE / 2 - 2; // ~88 для границ
 
-        // Удаляем старый пол и сетку, если они были добавлены ранее
-        // (в этом скрипте они создаются ниже, но мы их заменим)
-        // Вместо травяного поля — прозрачная подложка для теней
+        // Подложка для теней
         const groundGeo = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE);
         const groundMat = new THREE.ShadowMaterial({
             opacity: 0.3,
@@ -674,7 +672,7 @@
         scene.add(marker);
 
         // --------------------------------------------------------------
-        // 4. ЗАГРУЗКА МОДЕЛИ ГОРОДА
+        // 4. ЗАГРУЗКА МОДЕЛИ ГОРОДА С ПОДНЯТИЕМ
         // --------------------------------------------------------------
         const cityLoader = new GLTFLoader();
         let cityLoaded = false;
@@ -690,15 +688,21 @@
                 const maxDim = Math.max(size.x, size.y, size.z);
                 
                 // Масштабируем так, чтобы город заполнил всё поле
-                const targetSize = WORLD_SIZE * 0.9; // чуть меньше, чтобы не вылезал за границы
+                const targetSize = WORLD_SIZE * 0.9;
                 const scale = targetSize / maxDim;
                 city.scale.set(scale, scale, scale);
                 
-                // Центрируем город
+                // Центрируем город по X и Z
                 const center = new THREE.Vector3();
                 box.getCenter(center);
                 city.position.sub(center.multiplyScalar(scale));
-                city.position.y = -0.5; // Опускаем на уровень пола
+                
+                // ===== ИСПРАВЛЕНИЕ: ПОДНИМАЕМ ГОРОД =====
+                // Вычисляем новую нижнюю точку после масштабирования и центрирования
+                const newBox = new THREE.Box3().setFromObject(city);
+                const minY = newBox.min.y;
+                // Поднимаем так, чтобы нижняя точка была на уровне -0.5 (как у пола)
+                city.position.y = -0.5 - minY;
                 
                 // Включаем тени для всех частей города
                 city.traverse((child) => {
@@ -710,7 +714,7 @@
                 
                 scene.add(city);
                 cityLoaded = true;
-                console.log('✅ Город загружен и растянут на всё поле');
+                console.log('✅ Город загружен, растянут и поднят на уровень пола');
             },
             (xhr) => {
                 const percent = Math.round((xhr.loaded / xhr.total) * 100);
@@ -1415,7 +1419,8 @@
                 currentCar.rotation.z *= 0.9;
             }
 
-            currentCar.position.y = 0 + Math.sin(Date.now() / 500) * 0.002;
+            // Машина всегда на уровне земли (y=0)
+            currentCar.position.y = 0;
 
             const speedKmh = Math.round(velocity.length() * 150);
             document.getElementById('speedDisplay').textContent = speedKmh;
