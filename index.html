@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Городской симулятор — Миникарта</title>
     <style>
+        /* === ВСЕ СТИЛИ ОСТАЮТСЯ БЕЗ ИЗМЕНЕНИЙ === */
         * {
             margin: 0;
             padding: 0;
@@ -518,6 +519,17 @@
             user-select: none;
         }
 
+        /* NPC-машины на миникарте — маленькие точки */
+        .npc-dot {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: #ffaa44;
+            pointer-events: none;
+            z-index: 5;
+        }
+
         @media (max-width: 768px) {
             #hud { padding: 8px 16px; min-width: auto; width: 90%; bottom: 16px; }
             #hud .speed { font-size: 1.5rem; }
@@ -765,12 +777,13 @@
         });
 
         // --------------------------------------------------------------
-        // 6. ЗАГРУЗКА МОДЕЛЕЙ МАШИН
+        // 6. ЗАГРУЗКА МОДЕЛЕЙ МАШИН (игрок + NPC)
         // --------------------------------------------------------------
         const loader = new GLTFLoader();
         const loadingDiv = document.getElementById('loading');
         const loadStatus = document.getElementById('loadStatus');
 
+        // --- Игрок ---
         let currentCar = null;
         let carLoaded = false;
         let currentModelId = 'bmw';
@@ -781,6 +794,35 @@
             velocity: new THREE.Vector3(0, 0, 0),
             rotation: 0,
         };
+
+        // --- NPC ---
+        let npcCar = null;
+        let npcLoaded = false;
+        let npcOriginalMaterials = new Map();
+
+        // Состояние NPC: позиция на маршруте
+        const npcState = {
+            position: new THREE.Vector3(11.21, 0, -68.25), // старт на Ул.1
+            velocity: 0.03,
+            direction: 1, // 1 = вперёд, -1 = назад
+            currentRoute: 0, // индекс маршрута
+            progress: 0, // прогресс по маршруту 0..1
+            color: new THREE.Color(Math.random() * 0xffffff), // случайный цвет
+        };
+
+        // Определяем маршруты (линии улиц)
+        const routes = [
+            // Улица 1: от (11.21, -68.25) до (11.21, 39.00)
+            { start: new THREE.Vector3(11.21, 0, -68.25), end: new THREE.Vector3(11.21, 0, 39.00) },
+            // Улица 2: от (-58.90, 40.79) до (80.00, 40.67)
+            { start: new THREE.Vector3(-58.90, 0, 40.79), end: new THREE.Vector3(80.00, 0, 40.67) },
+            // Улица 3: от (-82.23, 14.79) до (48.55, 14.74)
+            { start: new THREE.Vector3(-82.23, 0, 14.79), end: new THREE.Vector3(48.55, 0, 14.74) },
+            // Улица 4: от (38.50, 68.23) до (39.35, 41.39)
+            { start: new THREE.Vector3(38.50, 0, 68.23), end: new THREE.Vector3(39.35, 0, 41.39) },
+            // Улица 5: от (-57.58, 41.91) до (-57.21, -35.20)
+            { start: new THREE.Vector3(-57.58, 0, 41.91), end: new THREE.Vector3(-57.21, 0, -35.20) }
+        ];
 
         const ENGINE_FORCE = 0.02;
         const REVERSE_FORCE = 0.01;
@@ -803,6 +845,7 @@
             space: false,
         };
 
+        // ===== СПИСОК МОДЕЛЕЙ (игрок) =====
         const modelsList = [
             { id: 'bmw', name: 'BEEMWA 22', emoji: '🚗', file: 'bmw2002.glb', rotation: 0, isCybertruck: false,
                 locked: false, credit: '"1968 BMW 2002" (https://skfb.ly/pFqYn) by tonielpro520 is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)' },
@@ -827,6 +870,9 @@
 
         const loadedModels = {};
 
+        // --------------------------------------------------------------
+        // 6. ЗАГРУЗКА МОДЕЛЕЙ
+        // --------------------------------------------------------------
         function loadModel(modelId, filePath) {
             return new Promise((resolve, reject) => {
                 const modelInfo = modelsList.find(m => m.id === modelId);
@@ -870,8 +916,49 @@
             });
         }
 
+        // --------------------------------------------------------------
+        // 7. ЗАГРУЗКА NPC
+        // --------------------------------------------------------------
+        async function loadNPC() {
+            try {
+                // Загружаем Tantoya Korova для NPC
+                const npcModel = await loadModel('mercedes', 'gelik.glb');
+                npcCar = npcModel;
+                npcCar.visible = true;
+                npcLoaded = true;
+                
+                // Применяем случайный цвет
+                const color = npcState.color;
+                npcCar.traverse((child) => {
+                    if (child.isMesh && child.material) {
+                        const mat = child.material;
+                        if (Array.isArray(mat)) {
+                            mat.forEach(m => {
+                                m.color.copy(color);
+                            });
+                        } else {
+                            mat.color.copy(color);
+                        }
+                    }
+                });
+                
+                // Ставим на стартовую позицию
+                const startPos = routes[0].start.clone();
+                npcCar.position.copy(startPos);
+                npcCar.position.y = 0;
+                
+                console.log(`✅ NPC Tantoya Korova загружена, цвет: #${color.getHexString()}`);
+            } catch (e) {
+                console.warn('❌ Ошибка загрузки NPC:', e);
+            }
+        }
+
+        // --------------------------------------------------------------
+        // 8. ИНИЦИАЛИЗАЦИЯ
+        // --------------------------------------------------------------
         async function init() {
             try {
+                // Загружаем модели игрока (все, кроме locked)
                 const modelsToLoad = modelsList.filter(m => !m.locked);
                 for (const model of modelsToLoad) {
                     try {
@@ -885,6 +972,8 @@
                         console.warn(`❌ Ошибка загрузки ${model.name}:`, e);
                     }
                 }
+                
+                // Загружаем locked модели в фоне
                 const lockedModels = modelsList.filter(m => m.locked);
                 for (const model of lockedModels) {
                     try {
@@ -896,6 +985,11 @@
                         console.warn(`❌ Ошибка загрузки ${model.name}:`, e);
                     }
                 }
+                
+                // Загружаем NPC
+                await loadNPC();
+                
+                // Устанавливаем первую машину игрока
                 const firstModel = modelsList[0];
                 if (loadedModels[firstModel.id]) {
                     currentCar = loadedModels[firstModel.id];
@@ -904,6 +998,7 @@
                     document.getElementById('modelNameDisplay').textContent = `${firstModel.emoji} ${firstModel.name}`;
                     document.getElementById('creditText').textContent = firstModel.credit;
                 }
+                
                 loadingDiv.style.display = 'none';
                 console.log('✅ Все модели загружены!');
                 renderCarList();
@@ -916,7 +1011,7 @@
         init();
 
         // --------------------------------------------------------------
-        // 7. ОТОБРАЖЕНИЕ СПИСКА МАШИН
+        // 9. ОТОБРАЖЕНИЕ СПИСКА МАШИН
         // --------------------------------------------------------------
         function renderCarList() {
             const container = document.getElementById('carList');
@@ -965,7 +1060,7 @@
         }
 
         // --------------------------------------------------------------
-        // 8. УПРАВЛЕНИЕ МЕНЮ
+        // 10. УПРАВЛЕНИЕ МЕНЮ
         // --------------------------------------------------------------
         const menuToggle = document.getElementById('menuToggle');
         const carSelector = document.getElementById('carSelector');
@@ -988,7 +1083,7 @@
         });
 
         // --------------------------------------------------------------
-        // 9. ПРОМОКОДЫ
+        // 11. ПРОМОКОДЫ
         // --------------------------------------------------------------
         const promoInput = document.getElementById('promoInput');
         const promoBtn = document.getElementById('promoBtn');
@@ -1034,7 +1129,7 @@
         });
 
         // --------------------------------------------------------------
-        // 10. ГАРАЖ
+        // 12. ГАРАЖ
         // --------------------------------------------------------------
         const garagePanel = document.getElementById('garagePanel');
         const garageToggle = document.getElementById('garageToggle');
@@ -1175,7 +1270,7 @@
         });
 
         // --------------------------------------------------------------
-        // 11. УПРАВЛЕНИЕ (W — назад, S — вперёд)
+        // 13. УПРАВЛЕНИЕ ИГРОКОМ (W — назад, S — вперёд)
         // --------------------------------------------------------------
         document.addEventListener('keydown', (e) => {
             const key = e.key;
@@ -1272,7 +1367,44 @@
         }
 
         // --------------------------------------------------------------
-        // 12. КАМЕРА
+        // 14. ОБНОВЛЕНИЕ NPC
+        // --------------------------------------------------------------
+        function updateNPC() {
+            if (!npcCar || !npcLoaded) return;
+
+            const route = routes[npcState.currentRoute];
+            const start = route.start;
+            const end = route.end;
+            
+            // Двигаемся по маршруту
+            npcState.progress += npcState.direction * 0.002;
+            
+            // Если достигли конца маршрута — разворачиваемся
+            if (npcState.progress >= 1) {
+                npcState.progress = 1;
+                npcState.direction = -1;
+            } else if (npcState.progress <= 0) {
+                npcState.progress = 0;
+                npcState.direction = 1;
+            }
+            
+            // Вычисляем позицию на маршруте
+            const t = npcState.progress;
+            const pos = new THREE.Vector3().lerpVectors(start, end, t);
+            npcCar.position.copy(pos);
+            npcCar.position.y = 0;
+            
+            // Поворачиваем NPC в направлении движения
+            const dir = new THREE.Vector3().copy(end).sub(start).normalize();
+            const angle = Math.atan2(dir.x, dir.z);
+            npcCar.rotation.y = angle + Math.PI / 2;
+            
+            // Лёгкое покачивание для живости
+            npcCar.rotation.z = Math.sin(Date.now() / 2000 + npcState.currentRoute) * 0.01;
+        }
+
+        // --------------------------------------------------------------
+        // 15. КАМЕРА
         // --------------------------------------------------------------
         const CAMERA_DISTANCE_MIN = 4.5;
         const CAMERA_DISTANCE_MAX = 6.5;
@@ -1310,7 +1442,7 @@
         }
 
         // --------------------------------------------------------------
-        // 13. МИНИКАРТА (с 5 улицами)
+        // 16. МИНИКАРТА (с 5 улицами + NPC)
         // --------------------------------------------------------------
         const minimapCanvas = document.getElementById('minimapCanvas');
         const ctx = minimapCanvas.getContext('2d');
@@ -1348,7 +1480,6 @@
             }
 
             // === ВСЕ 5 УЛИЦ ===
-            // Улица 1: от (11.21, -68.25) до (11.21, 39.00)
             ctx.strokeStyle = 'rgba(255, 215, 0, 0.6)';
             ctx.lineWidth = 2;
             ctx.beginPath();
@@ -1356,26 +1487,22 @@
             ctx.lineTo(toMapX(11.21), toMapY(39.00));
             ctx.stroke();
 
-            // Улица 2: от (-58.90, 40.79) до (80.00, 40.67)
             ctx.beginPath();
             ctx.moveTo(toMapX(-58.90), toMapY(40.79));
             ctx.lineTo(toMapX(80.00), toMapY(40.67));
             ctx.stroke();
 
-            // Улица 3: от (-82.23, 14.79) до (48.55, 14.74)
             ctx.strokeStyle = 'rgba(255, 215, 0, 0.5)';
             ctx.beginPath();
             ctx.moveTo(toMapX(-82.23), toMapY(14.79));
             ctx.lineTo(toMapX(48.55), toMapY(14.74));
             ctx.stroke();
 
-            // Улица 4: от (38.50, 68.23) до (39.35, 41.39)
             ctx.beginPath();
             ctx.moveTo(toMapX(38.50), toMapY(68.23));
             ctx.lineTo(toMapX(39.35), toMapY(41.39));
             ctx.stroke();
 
-            // Улица 5: от (-57.58, 41.91) до (-57.21, -35.20)
             ctx.beginPath();
             ctx.moveTo(toMapX(-57.58), toMapY(41.91));
             ctx.lineTo(toMapX(-57.21), toMapY(-35.20));
@@ -1397,7 +1524,7 @@
             ctx.arc(toMapX(0), toMapY(0), 3, 0, Math.PI * 2);
             ctx.fill();
 
-            // Машина
+            // === ИГРОК ===
             if (currentCar && carLoaded) {
                 const pos = currentCar.position;
                 const px = toMapX(pos.x);
@@ -1431,17 +1558,34 @@
                 ctx.stroke();
             }
 
+            // === NPC ===
+            if (npcCar && npcLoaded) {
+                const pos = npcCar.position;
+                const px = toMapX(pos.x);
+                const py = toMapY(pos.z);
+
+                // Маленькая жёлтая точка
+                ctx.fillStyle = '#ffaa44';
+                ctx.shadowColor = 'rgba(255, 170, 68, 0.3)';
+                ctx.shadowBlur = 4;
+                ctx.beginPath();
+                ctx.arc(px, py, 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
             ctx.lineWidth = 1;
             ctx.strokeRect(0, 0, canvas.width, canvas.height);
         }
 
         // --------------------------------------------------------------
-        // 14. АНИМАЦИОННЫЙ ЦИКЛ
+        // 17. АНИМАЦИОННЫЙ ЦИКЛ
         // --------------------------------------------------------------
         function animate() {
             requestAnimationFrame(animate);
             updateCar();
+            updateNPC();
             updateCamera();
             updateMinimap();
             renderer.render(scene, camera);
@@ -1450,7 +1594,9 @@
 
         console.log('🏙️ Симулятор запущен с картой города и миникартой!');
         console.log(`📍 Размер поля: ${WORLD_SIZE}×${WORLD_SIZE}, центр (0, 0, 0)`);
-        console.log('🗺️ Миникарта в правом верхнем углу показывает ваше местоположение');
+        console.log('🚗 Добавлен NPC Tantoya Korova, который ездит по улицам!');
+        console.log('🎨 Цвет NPC выбран случайно из гаража');
+        console.log('🗺️ Миникарта в правом верхнем углу показывает ваше местоположение и NPC');
         console.log('🔑 Промокоды: "танк" — TTTank, "мила" — Tiramisu SRM');
         console.log('📖 Управление: W/↑ — назад, S/↓ — вперёд, A/←, D/→ — руль, Пробел — ручник');
     </script>
