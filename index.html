@@ -519,17 +519,6 @@
             user-select: none;
         }
 
-        /* NPC-машины на миникарте — маленькие точки */
-        .npc-dot {
-            position: absolute;
-            width: 4px;
-            height: 4px;
-            border-radius: 50%;
-            background: #ffaa44;
-            pointer-events: none;
-            z-index: 5;
-        }
-
         @media (max-width: 768px) {
             #hud { padding: 8px 16px; min-width: auto; width: 90%; bottom: 16px; }
             #hud .speed { font-size: 1.5rem; }
@@ -687,7 +676,6 @@
         const WORLD_SIZE = 180;
         const BOUNDARY = WORLD_SIZE / 2 - 2;
 
-        // Подложка для теней
         const groundGeo = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE);
         const groundMat = new THREE.ShadowMaterial({ opacity: 0.3, color: 0x000000 });
         const ground = new THREE.Mesh(groundGeo, groundMat);
@@ -696,12 +684,10 @@
         ground.receiveShadow = true;
         scene.add(ground);
 
-        // Сетка
         const gridHelper = new THREE.GridHelper(WORLD_SIZE, 20, 0x88dd88, 0x44aa44);
         gridHelper.position.y = -0.48;
         scene.add(gridHelper);
 
-        // Маркер в центре
         const markerGeo = new THREE.RingGeometry(0.5, 0.8, 32);
         const markerMat = new THREE.MeshBasicMaterial({ color: 0xff6b35, side: THREE.DoubleSide, transparent: true,
             opacity: 0.5 });
@@ -783,7 +769,6 @@
         const loadingDiv = document.getElementById('loading');
         const loadStatus = document.getElementById('loadStatus');
 
-        // --- Игрок ---
         let currentCar = null;
         let carLoaded = false;
         let currentModelId = 'bmw';
@@ -798,80 +783,128 @@
         // --- NPC ---
         let npcCar = null;
         let npcLoaded = false;
-        let npcOriginalMaterials = new Map();
 
-        // Состояние NPC: позиция на маршруте
+        // Состояние NPC
         const npcState = {
-            position: new THREE.Vector3(11.21, 0, -68.25), // старт на Ул.1
+            position: new THREE.Vector3(11.21, 0, -68.25),
             velocity: 0.03,
-            direction: 1, // 1 = вперёд, -1 = назад
-            currentRoute: 0, // индекс маршрута
-            progress: 0, // прогресс по маршруту 0..1
-            color: new THREE.Color(Math.random() * 0xffffff), // случайный цвет
+            currentRouteIndex: 0,
+            progress: 0,
+            direction: 1,
+            color: new THREE.Color(Math.random() * 0xffffff),
+            waitingForTurn: false,
+            turnTimer: 0,
         };
-
-        // Определяем маршруты (линии улиц)
-        const routes = [
-            // Улица 1: от (11.21, -68.25) до (11.21, 39.00)
-            { start: new THREE.Vector3(11.21, 0, -68.25), end: new THREE.Vector3(11.21, 0, 39.00) },
-            // Улица 2: от (-58.90, 40.79) до (80.00, 40.67)
-            { start: new THREE.Vector3(-58.90, 0, 40.79), end: new THREE.Vector3(80.00, 0, 40.67) },
-            // Улица 3: от (-82.23, 14.79) до (48.55, 14.74)
-            { start: new THREE.Vector3(-82.23, 0, 14.79), end: new THREE.Vector3(48.55, 0, 14.74) },
-            // Улица 4: от (38.50, 68.23) до (39.35, 41.39)
-            { start: new THREE.Vector3(38.50, 0, 68.23), end: new THREE.Vector3(39.35, 0, 41.39) },
-            // Улица 5: от (-57.58, 41.91) до (-57.21, -35.20)
-            { start: new THREE.Vector3(-57.58, 0, 41.91), end: new THREE.Vector3(-57.21, 0, -35.20) }
-        ];
-
-        const ENGINE_FORCE = 0.02;
-        const REVERSE_FORCE = 0.01;
-        const MAX_SPEED = 0.5;
-        const TURN_SPEED = 0.03;
-        const FRICTION = 0.99;
-        const TANK_MAX_SPEED = 0.23;
-        const CYBERTRUCK_CAMERA_DISTANCE = 8;
-        const CYBERTRUCK_CAMERA_HEIGHT = 4.5;
-
-        const keys = {
-            w: false,
-            s: false,
-            a: false,
-            d: false,
-            up: false,
-            down: false,
-            left: false,
-            right: false,
-            space: false,
-        };
-
-        // ===== СПИСОК МОДЕЛЕЙ (игрок) =====
-        const modelsList = [
-            { id: 'bmw', name: 'BEEMWA 22', emoji: '🚗', file: 'bmw2002.glb', rotation: 0, isCybertruck: false,
-                locked: false, credit: '"1968 BMW 2002" (https://skfb.ly/pFqYn) by tonielpro520 is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)' },
-            { id: 'bmw30', name: 'BEEMWA 30', emoji: '🚗', file: 'BEEMWAPP3.glb', rotation: Math.PI / 2, isCybertruck: false,
-                locked: false, credit: '"Low Poly Car - BMW E30 1985 White" (https://skfb.ly/o8EBR) by ROH3D is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)' },
-            { id: 'nissan', name: 'Neasun Loral 2rbo', emoji: '🚘', file: 'nissan_laurel.glb', rotation: Math.PI / 2,
-                isCybertruck: false, locked: false, credit: '"Nissan Laurel C31 Turbo 85\'" (https://skfb.ly/6SoPW) by own.guest is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)' },
-            { id: 'mercedes', name: 'Tantoya Korova', emoji: '🚙', file: 'gelik.glb', rotation: 0, isCybertruck: false,
-                locked: false, credit: '"Toyota Corola" (https://skfb.ly/6RHQA) by danieljorge435 is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)' },
-            { id: 'toyota', name: 'Tantoya Parmezan', emoji: '🚗', file: 'toyota_tezzo.glb', rotation: -Math.PI / 2,
-                isCybertruck: false, locked: false, credit: '"Tozzo \'98 - Low poly model" (https://skfb.ly/pB6Xs) by Daniel Zhabotinsky is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)' },
-            { id: 'pagani', name: 'Poganka Sport', emoji: '🏎️', file: 'pagani1.glb', rotation: 0, isCybertruck: false,
-                locked: false, credit: '"Pagani Zonda Cinque" (https://skfb.ly/oBt9O) by Ajay Gawde is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)' },
-            { id: 'tank', name: 'TTTank', emoji: '🎖️', file: 'low_poly_tank.glb', rotation: Math.PI / 2, isCybertruck: false,
-                locked: true, credit: '"Low Poly Tank" (https://skfb.ly/6YNSy) by Kolos Studios is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)',
-                isTank: true },
-            { id: 'cybertruck', name: 'Teelsa Hypertrick', emoji: '🚛', file: 'low_poly_tesla_cybertruck.glb', rotation: 0,
-                isCybertruck: true, locked: false, scale: 2.0, credit: 'Free Standard' },
-            { id: 'tiramisu', name: 'Tiramisu SRM', emoji: '🍰', file: 'crumbelinas_tira-missile_early_look.glb',
-                rotation: 0, isCybertruck: false, locked: true, credit: '"Crumbelina\'s Tira-Missile (Early look)" (https://skfb.ly/pAR7K) by CrystalCandySTK is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)' }
-        ];
-
-        const loadedModels = {};
 
         // --------------------------------------------------------------
-        // 6. ЗАГРУЗКА МОДЕЛЕЙ
+        // 7. ОПРЕДЕЛЕНИЕ МАРШРУТОВ (улицы и переулки)
+        // --------------------------------------------------------------
+        // Каждый маршрут — массив точек (минимум 2)
+        // Для переулка 1 — 3 точки
+        const routes = [
+            // Улица 1: от (11.21, -68.25) до (11.21, 39.00)
+            { points: [new THREE.Vector3(11.21, 0, -68.25), new THREE.Vector3(11.21, 0, 39.00)], name: 'Ул.1' },
+            // Улица 2: от (-58.90, 40.79) до (80.00, 40.67)
+            { points: [new THREE.Vector3(-58.90, 0, 40.79), new THREE.Vector3(80.00, 0, 40.67)], name: 'Ул.2' },
+            // Улица 3: от (-82.23, 14.79) до (48.55, 14.74)
+            { points: [new THREE.Vector3(-82.23, 0, 14.79), new THREE.Vector3(48.55, 0, 14.74)], name: 'Ул.3' },
+            // Улица 4: от (38.50, 68.23) до (39.35, 41.39)
+            { points: [new THREE.Vector3(38.50, 0, 68.23), new THREE.Vector3(39.35, 0, 41.39)], name: 'Ул.4' },
+            // Улица 5: от (-57.58, 41.91) до (-57.21, -35.20)
+            { points: [new THREE.Vector3(-57.58, 0, 41.91), new THREE.Vector3(-57.21, 0, -35.20)], name: 'Ул.5' },
+            // Улица 6: от (48.95, -67.81) до (49.27, 39.45)
+            { points: [new THREE.Vector3(48.95, 0, -67.81), new THREE.Vector3(49.27, 0, 39.45)], name: 'Ул.6' },
+            // Улица 7: от (82.00, -16.75) до (-56.60, -17.12)
+            { points: [new THREE.Vector3(82.00, 0, -16.75), new THREE.Vector3(-56.60, 0, -17.12)], name: 'Ул.7' },
+            // Переулок 1: от (-82.26, -36.04) через (-47.20, -35.64) до (-46.40, -66.40)
+            { points: [new THREE.Vector3(-82.26, 0, -36.04), new THREE.Vector3(-47.20, 0, -35.64), new THREE.Vector3(-46.40, 0, -66.40)], name: 'Пер.1' },
+            // Улица 1 дублёр: от (-2.76, 42.60) до (-2.66, -47.37)
+            { points: [new THREE.Vector3(-2.76, 0, 42.60), new THREE.Vector3(-2.66, 0, -47.37)], name: 'Ул.1Д' }
+        ];
+
+        // --------------------------------------------------------------
+        // 8. ПОИСК ПЕРЕСЕЧЕНИЙ (для поворотов NPC)
+        // --------------------------------------------------------------
+        function findIntersections() {
+            const intersections = [];
+            const tolerance = 2.0; // допуск для определения пересечения
+            
+            for (let i = 0; i < routes.length; i++) {
+                for (let j = i + 1; j < routes.length; j++) {
+                    const r1 = routes[i];
+                    const r2 = routes[j];
+                    
+                    // Проверяем все сегменты маршрутов
+                    for (let a = 0; a < r1.points.length - 1; a++) {
+                        for (let b = 0; b < r2.points.length - 1; b++) {
+                            const p1 = r1.points[a];
+                            const p2 = r1.points[a + 1];
+                            const p3 = r2.points[b];
+                            const p4 = r2.points[b + 1];
+                            
+                            // Проверяем пересечение двух отрезков на плоскости XZ
+                            const d1x = p2.x - p1.x;
+                            const d1z = p2.z - p1.z;
+                            const d2x = p4.x - p3.x;
+                            const d2z = p4.z - p3.z;
+                            
+                            const denom = d1x * d2z - d1z * d2x;
+                            if (Math.abs(denom) < 0.0001) continue;
+                            
+                            const t = ((p3.x - p1.x) * d2z - (p3.z - p1.z) * d2x) / denom;
+                            const u = ((p3.x - p1.x) * d1z - (p3.z - p1.z) * d1x) / denom;
+                            
+                            if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
+                                const ix = p1.x + t * d1x;
+                                const iz = p1.z + t * d1z;
+                                intersections.push({
+                                    pos: new THREE.Vector3(ix, 0, iz),
+                                    route1: i,
+                                    seg1: a,
+                                    route2: j,
+                                    seg2: b
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+            return intersections;
+        }
+
+        const intersections = findIntersections();
+        console.log(`Найдено ${intersections.length} пересечений улиц`);
+
+        // --------------------------------------------------------------
+        // 9. ПОЛУЧЕНИЕ СЛУЧАЙНОГО МАРШРУТА НА ПЕРЕКРЁСТКЕ
+        // --------------------------------------------------------------
+        function getRandomRouteAtIntersection(currentRouteIndex, progress) {
+            const route = routes[currentRouteIndex];
+            const totalSegments = route.points.length - 1;
+            const segIndex = Math.min(Math.floor(progress * totalSegments), totalSegments - 1);
+            
+            // Находим пересечения на текущем сегменте
+            const availableRoutes = [];
+            for (const inter of intersections) {
+                if (inter.route1 === currentRouteIndex && inter.seg1 === segIndex) {
+                    availableRoutes.push(inter.route2);
+                }
+                if (inter.route2 === currentRouteIndex && inter.seg2 === segIndex) {
+                    availableRoutes.push(inter.route1);
+                }
+            }
+            
+            if (availableRoutes.length === 0) return null;
+            
+            // Выбираем случайный маршрут, отличный от текущего
+            const candidates = availableRoutes.filter(r => r !== currentRouteIndex);
+            if (candidates.length === 0) return null;
+            
+            return candidates[Math.floor(Math.random() * candidates.length)];
+        }
+
+        // --------------------------------------------------------------
+        // 10. ЗАГРУЗКА МОДЕЛЕЙ
         // --------------------------------------------------------------
         function loadModel(modelId, filePath) {
             return new Promise((resolve, reject) => {
@@ -916,34 +949,54 @@
             });
         }
 
+        // ===== СПИСОК МОДЕЛЕЙ (игрок) =====
+        const modelsList = [
+            { id: 'bmw', name: 'BEEMWA 22', emoji: '🚗', file: 'bmw2002.glb', rotation: 0, isCybertruck: false,
+                locked: false, credit: '"1968 BMW 2002" (https://skfb.ly/pFqYn) by tonielpro520 is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)' },
+            { id: 'bmw30', name: 'BEEMWA 30', emoji: '🚗', file: 'BEEMWAPP3.glb', rotation: Math.PI / 2, isCybertruck: false,
+                locked: false, credit: '"Low Poly Car - BMW E30 1985 White" (https://skfb.ly/o8EBR) by ROH3D is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)' },
+            { id: 'nissan', name: 'Neasun Loral 2rbo', emoji: '🚘', file: 'nissan_laurel.glb', rotation: Math.PI / 2,
+                isCybertruck: false, locked: false, credit: '"Nissan Laurel C31 Turbo 85\'" (https://skfb.ly/6SoPW) by own.guest is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)' },
+            { id: 'mercedes', name: 'Tantoya Korova', emoji: '🚙', file: 'gelik.glb', rotation: 0, isCybertruck: false,
+                locked: false, credit: '"Toyota Corola" (https://skfb.ly/6RHQA) by danieljorge435 is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)' },
+            { id: 'toyota', name: 'Tantoya Parmezan', emoji: '🚗', file: 'toyota_tezzo.glb', rotation: -Math.PI / 2,
+                isCybertruck: false, locked: false, credit: '"Tozzo \'98 - Low poly model" (https://skfb.ly/pB6Xs) by Daniel Zhabotinsky is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)' },
+            { id: 'pagani', name: 'Poganka Sport', emoji: '🏎️', file: 'pagani1.glb', rotation: 0, isCybertruck: false,
+                locked: false, credit: '"Pagani Zonda Cinque" (https://skfb.ly/oBt9O) by Ajay Gawde is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)' },
+            { id: 'tank', name: 'TTTank', emoji: '🎖️', file: 'low_poly_tank.glb', rotation: Math.PI / 2, isCybertruck: false,
+                locked: true, credit: '"Low Poly Tank" (https://skfb.ly/6YNSy) by Kolos Studios is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)',
+                isTank: true },
+            { id: 'cybertruck', name: 'Teelsa Hypertrick', emoji: '🚛', file: 'low_poly_tesla_cybertruck.glb', rotation: 0,
+                isCybertruck: true, locked: false, scale: 2.0, credit: 'Free Standard' },
+            { id: 'tiramisu', name: 'Tiramisu SRM', emoji: '🍰', file: 'crumbelinas_tira-missile_early_look.glb',
+                rotation: 0, isCybertruck: false, locked: true, credit: '"Crumbelina\'s Tira-Missile (Early look)" (https://skfb.ly/pAR7K) by CrystalCandySTK is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/)' }
+        ];
+
+        const loadedModels = {};
+
         // --------------------------------------------------------------
-        // 7. ЗАГРУЗКА NPC
+        // 11. ЗАГРУЗКА NPC
         // --------------------------------------------------------------
         async function loadNPC() {
             try {
-                // Загружаем Tantoya Korova для NPC
                 const npcModel = await loadModel('mercedes', 'gelik.glb');
                 npcCar = npcModel;
                 npcCar.visible = true;
                 npcLoaded = true;
                 
-                // Применяем случайный цвет
                 const color = npcState.color;
                 npcCar.traverse((child) => {
                     if (child.isMesh && child.material) {
                         const mat = child.material;
                         if (Array.isArray(mat)) {
-                            mat.forEach(m => {
-                                m.color.copy(color);
-                            });
+                            mat.forEach(m => { m.color.copy(color); });
                         } else {
                             mat.color.copy(color);
                         }
                     }
                 });
                 
-                // Ставим на стартовую позицию
-                const startPos = routes[0].start.clone();
+                const startPos = routes[0].points[0].clone();
                 npcCar.position.copy(startPos);
                 npcCar.position.y = 0;
                 
@@ -954,11 +1007,10 @@
         }
 
         // --------------------------------------------------------------
-        // 8. ИНИЦИАЛИЗАЦИЯ
+        // 12. ИНИЦИАЛИЗАЦИЯ
         // --------------------------------------------------------------
         async function init() {
             try {
-                // Загружаем модели игрока (все, кроме locked)
                 const modelsToLoad = modelsList.filter(m => !m.locked);
                 for (const model of modelsToLoad) {
                     try {
@@ -973,7 +1025,6 @@
                     }
                 }
                 
-                // Загружаем locked модели в фоне
                 const lockedModels = modelsList.filter(m => m.locked);
                 for (const model of lockedModels) {
                     try {
@@ -986,10 +1037,8 @@
                     }
                 }
                 
-                // Загружаем NPC
                 await loadNPC();
                 
-                // Устанавливаем первую машину игрока
                 const firstModel = modelsList[0];
                 if (loadedModels[firstModel.id]) {
                     currentCar = loadedModels[firstModel.id];
@@ -1011,7 +1060,7 @@
         init();
 
         // --------------------------------------------------------------
-        // 9. ОТОБРАЖЕНИЕ СПИСКА МАШИН
+        // 13. ОТОБРАЖЕНИЕ СПИСКА МАШИН
         // --------------------------------------------------------------
         function renderCarList() {
             const container = document.getElementById('carList');
@@ -1060,7 +1109,7 @@
         }
 
         // --------------------------------------------------------------
-        // 10. УПРАВЛЕНИЕ МЕНЮ
+        // 14. УПРАВЛЕНИЕ МЕНЮ
         // --------------------------------------------------------------
         const menuToggle = document.getElementById('menuToggle');
         const carSelector = document.getElementById('carSelector');
@@ -1083,7 +1132,7 @@
         });
 
         // --------------------------------------------------------------
-        // 11. ПРОМОКОДЫ
+        // 15. ПРОМОКОДЫ
         // --------------------------------------------------------------
         const promoInput = document.getElementById('promoInput');
         const promoBtn = document.getElementById('promoBtn');
@@ -1129,7 +1178,7 @@
         });
 
         // --------------------------------------------------------------
-        // 12. ГАРАЖ
+        // 16. ГАРАЖ
         // --------------------------------------------------------------
         const garagePanel = document.getElementById('garagePanel');
         const garageToggle = document.getElementById('garageToggle');
@@ -1270,7 +1319,7 @@
         });
 
         // --------------------------------------------------------------
-        // 13. УПРАВЛЕНИЕ ИГРОКОМ (W — назад, S — вперёд)
+        // 17. УПРАВЛЕНИЕ ИГРОКОМ
         // --------------------------------------------------------------
         document.addEventListener('keydown', (e) => {
             const key = e.key;
@@ -1315,6 +1364,18 @@
             if (key === ' ') { keys.space = false;
                 e.preventDefault(); }
         });
+
+        const keys = {
+            w: false,
+            s: false,
+            a: false,
+            d: false,
+            up: false,
+            down: false,
+            left: false,
+            right: false,
+            space: false,
+        };
 
         function updateCar() {
             if (!currentCar || !carLoaded) return;
@@ -1366,20 +1427,29 @@
                 `📍 ${position.x.toFixed(2)} · ${position.y.toFixed(2)} · ${position.z.toFixed(2)}`;
         }
 
+        const ENGINE_FORCE = 0.02;
+        const REVERSE_FORCE = 0.01;
+        const MAX_SPEED = 0.5;
+        const TURN_SPEED = 0.03;
+        const FRICTION = 0.99;
+        const TANK_MAX_SPEED = 0.23;
+        const CYBERTRUCK_CAMERA_DISTANCE = 8;
+        const CYBERTRUCK_CAMERA_HEIGHT = 4.5;
+
         // --------------------------------------------------------------
-        // 14. ОБНОВЛЕНИЕ NPC
+        // 18. ОБНОВЛЕНИЕ NPC (с поворотами на перекрёстках)
         // --------------------------------------------------------------
         function updateNPC() {
             if (!npcCar || !npcLoaded) return;
 
-            const route = routes[npcState.currentRoute];
-            const start = route.start;
-            const end = route.end;
+            const route = routes[npcState.currentRouteIndex];
+            const points = route.points;
+            const totalSegments = points.length - 1;
             
-            // Двигаемся по маршруту
+            // Движение по маршруту
             npcState.progress += npcState.direction * 0.002;
             
-            // Если достигли конца маршрута — разворачиваемся
+            // Проверяем, не достигли ли конца маршрута
             if (npcState.progress >= 1) {
                 npcState.progress = 1;
                 npcState.direction = -1;
@@ -1388,23 +1458,81 @@
                 npcState.direction = 1;
             }
             
+            // Проверяем, не на перекрёстке ли мы (для поворота)
+            const segIndex = Math.min(Math.floor(npcState.progress * totalSegments), totalSegments - 1);
+            const localProgress = (npcState.progress * totalSegments) - segIndex;
+            
+            // Если мы в начале или конце сегмента и не ждём поворота
+            if (localProgress < 0.05 || localProgress > 0.95) {
+                if (!npcState.waitingForTurn) {
+                    // Пытаемся найти поворот
+                    const newRoute = getRandomRouteAtIntersection(npcState.currentRouteIndex, npcState.progress);
+                    if (newRoute !== null && Math.random() < 0.3) { // 30% шанс повернуть
+                        npcState.waitingForTurn = true;
+                        npcState.turnTimer = 30; // ждём 30 кадров перед поворотом
+                    }
+                } else {
+                    npcState.turnTimer--;
+                    if (npcState.turnTimer <= 0) {
+                        // Выполняем поворот
+                        const newRoute = getRandomRouteAtIntersection(npcState.currentRouteIndex, npcState.progress);
+                        if (newRoute !== null) {
+                            // Переключаемся на новый маршрут
+                            const oldRoute = routes[npcState.currentRouteIndex];
+                            const newRouteObj = routes[newRoute];
+                            
+                            // Находим ближайшую точку на новом маршруте
+                            let minDist = Infinity;
+                            let bestPointIndex = 0;
+                            const currentPos = npcCar.position;
+                            
+                            for (let i = 0; i < newRouteObj.points.length; i++) {
+                                const p = newRouteObj.points[i];
+                                const d = currentPos.distanceTo(p);
+                                if (d < minDist) {
+                                    minDist = d;
+                                    bestPointIndex = i;
+                                }
+                            }
+                            
+                            npcState.currentRouteIndex = newRoute;
+                            npcState.progress = bestPointIndex / (newRouteObj.points.length - 1);
+                            npcState.direction = 1;
+                            npcState.waitingForTurn = false;
+                            console.log(`NPC повернула на ${newRouteObj.name}`);
+                        } else {
+                            npcState.waitingForTurn = false;
+                        }
+                    }
+                }
+            } else {
+                npcState.waitingForTurn = false;
+            }
+            
             // Вычисляем позицию на маршруте
             const t = npcState.progress;
-            const pos = new THREE.Vector3().lerpVectors(start, end, t);
+            const total = points.length - 1;
+            const seg = Math.min(Math.floor(t * total), total - 1);
+            const localT = (t * total) - seg;
+            
+            const p1 = points[seg];
+            const p2 = points[Math.min(seg + 1, total)];
+            const pos = new THREE.Vector3().lerpVectors(p1, p2, localT);
+            
             npcCar.position.copy(pos);
             npcCar.position.y = 0;
             
             // Поворачиваем NPC в направлении движения
-            const dir = new THREE.Vector3().copy(end).sub(start).normalize();
+            const dir = new THREE.Vector3().copy(p2).sub(p1).normalize();
+            if (npcState.direction < 0) dir.negate();
             const angle = Math.atan2(dir.x, dir.z);
             npcCar.rotation.y = angle + Math.PI / 2;
             
-            // Лёгкое покачивание для живости
-            npcCar.rotation.z = Math.sin(Date.now() / 2000 + npcState.currentRoute) * 0.01;
+            npcCar.rotation.z = Math.sin(Date.now() / 2000 + npcState.currentRouteIndex) * 0.01;
         }
 
         // --------------------------------------------------------------
-        // 15. КАМЕРА
+        // 19. КАМЕРА
         // --------------------------------------------------------------
         const CAMERA_DISTANCE_MIN = 4.5;
         const CAMERA_DISTANCE_MAX = 6.5;
@@ -1442,7 +1570,7 @@
         }
 
         // --------------------------------------------------------------
-        // 16. МИНИКАРТА (с 5 улицами + NPC)
+        // 20. МИНИКАРТА (с 9 маршрутами)
         // --------------------------------------------------------------
         const minimapCanvas = document.getElementById('minimapCanvas');
         const ctx = minimapCanvas.getContext('2d');
@@ -1465,7 +1593,6 @@
             const ctx = canvas.getContext('2d');
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
             ctx.fillStyle = 'rgba(20, 25, 35, 0.85)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -1479,44 +1606,37 @@
                 return (z + halfWorld) / (halfWorld * 2) * canvas.height;
             }
 
-            // === ВСЕ 5 УЛИЦ ===
-            ctx.strokeStyle = 'rgba(255, 215, 0, 0.6)';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(toMapX(11.21), toMapY(-68.25));
-            ctx.lineTo(toMapX(11.21), toMapY(39.00));
-            ctx.stroke();
+            // === РИСУЕМ ВСЕ МАРШРУТЫ ===
+            const colors = [
+                'rgba(255, 215, 0, 0.6)',
+                'rgba(255, 215, 0, 0.6)',
+                'rgba(255, 215, 0, 0.5)',
+                'rgba(255, 215, 0, 0.5)',
+                'rgba(255, 215, 0, 0.5)',
+                'rgba(100, 200, 255, 0.5)',
+                'rgba(100, 200, 255, 0.5)',
+                'rgba(255, 200, 100, 0.5)',
+                'rgba(255, 200, 100, 0.5)'
+            ];
 
-            ctx.beginPath();
-            ctx.moveTo(toMapX(-58.90), toMapY(40.79));
-            ctx.lineTo(toMapX(80.00), toMapY(40.67));
-            ctx.stroke();
-
-            ctx.strokeStyle = 'rgba(255, 215, 0, 0.5)';
-            ctx.beginPath();
-            ctx.moveTo(toMapX(-82.23), toMapY(14.79));
-            ctx.lineTo(toMapX(48.55), toMapY(14.74));
-            ctx.stroke();
-
-            ctx.beginPath();
-            ctx.moveTo(toMapX(38.50), toMapY(68.23));
-            ctx.lineTo(toMapX(39.35), toMapY(41.39));
-            ctx.stroke();
-
-            ctx.beginPath();
-            ctx.moveTo(toMapX(-57.58), toMapY(41.91));
-            ctx.lineTo(toMapX(-57.21), toMapY(-35.20));
-            ctx.stroke();
-
-            // Подписи улиц
-            ctx.fillStyle = 'rgba(255, 215, 0, 0.35)';
-            ctx.font = '7px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText('Ул.1', toMapX(11.21), toMapY(-25));
-            ctx.fillText('Ул.2', toMapX(10), toMapY(40.79) - 6);
-            ctx.fillText('Ул.3', toMapX(-20), toMapY(14.79) - 6);
-            ctx.fillText('Ул.4', toMapX(39), toMapY(55));
-            ctx.fillText('Ул.5', toMapX(-57.4), toMapY(5));
+            routes.forEach((route, idx) => {
+                ctx.strokeStyle = colors[idx % colors.length];
+                ctx.lineWidth = (idx < 2) ? 2 : 1.5;
+                ctx.beginPath();
+                const pts = route.points;
+                ctx.moveTo(toMapX(pts[0].x), toMapY(pts[0].z));
+                for (let i = 1; i < pts.length; i++) {
+                    ctx.lineTo(toMapX(pts[i].x), toMapY(pts[i].z));
+                }
+                ctx.stroke();
+                
+                // Подписи
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+                ctx.font = '6px sans-serif';
+                ctx.textAlign = 'center';
+                const midIdx = Math.floor(pts.length / 2);
+                ctx.fillText(route.name, toMapX(pts[midIdx].x), toMapY(pts[midIdx].z) - 4);
+            });
 
             // Центр
             ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
@@ -1542,7 +1662,6 @@
                 ctx.fill();
 
                 ctx.shadowBlur = 0;
-
                 ctx.fillStyle = '#ff6b35';
                 ctx.beginPath();
                 ctx.arc(px, py, 2.5, 0, Math.PI * 2);
@@ -1564,7 +1683,6 @@
                 const px = toMapX(pos.x);
                 const py = toMapY(pos.z);
 
-                // Маленькая жёлтая точка
                 ctx.fillStyle = '#ffaa44';
                 ctx.shadowColor = 'rgba(255, 170, 68, 0.3)';
                 ctx.shadowBlur = 4;
@@ -1580,7 +1698,7 @@
         }
 
         // --------------------------------------------------------------
-        // 17. АНИМАЦИОННЫЙ ЦИКЛ
+        // 21. АНИМАЦИОННЫЙ ЦИКЛ
         // --------------------------------------------------------------
         function animate() {
             requestAnimationFrame(animate);
@@ -1594,7 +1712,8 @@
 
         console.log('🏙️ Симулятор запущен с картой города и миникартой!');
         console.log(`📍 Размер поля: ${WORLD_SIZE}×${WORLD_SIZE}, центр (0, 0, 0)`);
-        console.log('🚗 Добавлен NPC Tantoya Korova, который ездит по улицам!');
+        console.log(`🚗 Добавлено ${routes.length} маршрутов для NPC`);
+        console.log(`🔄 Найдено ${intersections.length} перекрёстков для поворотов`);
         console.log('🎨 Цвет NPC выбран случайно из гаража');
         console.log('🗺️ Миникарта в правом верхнем углу показывает ваше местоположение и NPC');
         console.log('🔑 Промокоды: "танк" — TTTank, "мила" — Tiramisu SRM');
